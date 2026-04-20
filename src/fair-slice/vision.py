@@ -26,6 +26,13 @@ TARGET_SIZE = 500           # Resize longest edge to this before any processing
 MAX_INGREDIENTS = 8         # Hard cap — group beyond this
 MIN_INGREDIENTS = 2         # Gemini must return at least this many
 
+# Perspective correction thresholds (minor_axis / major_axis ratio)
+# A perfect top-down photo → ratio = 1.0
+# A slightly tilted photo  → ratio ≈ 0.85–0.95  (correct it)
+# Extremely tilted photo   → ratio < PERSPECTIVE_ABORT (refuse to process)
+PERSPECTIVE_CORRECTION_THRESHOLD = 0.92   # below → apply correction
+PERSPECTIVE_ABORT_THRESHOLD       = 0.40  # below → raise, result would be unreliable
+
 
 # ---------------------------------------------------------------------------
 # Vertex AI / Gemini helpers
@@ -101,6 +108,179 @@ Example format:
 
     # Cap at MAX_INGREDIENTS
     return ingredients[:MAX_INGREDIENTS]
+
+
+# ---------------------------------------------------------------------------
+# Perspective correction
+# ---------------------------------------------------------------------------
+
+def correct_perspective(img_bgr: np.ndarray) -> np.ndarray:
+    """
+    Detects whether the dish appears as an ellipse (tilted camera) and, if so,
+    applies an affine transformation to restore the circular shape as if the
+    photo had been taken perfectly overhead.
+
+    The correction is based on fitting an ellipse to the dish contour and then
+    scaling along the short axis until both axes are equal.
+
+    Deformation is measured as:
+        ratio = minor_axis / major_axis   (1.0 = perfect circle, 0.0 = edge-on)
+
+    Decision table:
+        ratio >= PERSPECTIVE_CORRECTION_THRESHOLD  → image returned unchanged
+        PERSPECTIVE_ABORT_THRESHOLD <= ratio < PERSPECTIVE_CORRECTION_THRESHOLD
+                                                   → correction applied
+        ratio < PERSPECTIVE_ABORT_THRESHOLD        → ValueError raised
+                                                     (tilt too extreme, result
+                                                      would be meaningless)
+
+    Args:
+        img_bgr: BGR image as np.ndarray, already resized to TARGET_SIZE.
+
+    Returns:
+        Corrected BGR image as np.ndarray (same or different shape).
+
+    Raises:
+        ValueError: If the detected deformation is too extreme to correct.
+    """
+    H, W = img_bgr.shape[:2]
+
+    # ------------------------------------------------------------------
+    # 1. Isolate the dish contour to fit an ellipse
+    # ------------------------------------------------------------------
+    gray    = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
+    edges   = cv2.Canny(blurred, 30, 100)
+
+    # Dilate edges so fragmented arcs connect into a closed contour
+    edges = cv2.dilate(edges, np.ones((5, 5), np.uint8), iterations=2)
+
+    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        print("[vision] correct_perspective: no contours found, skipping correction.")
+        return img_bgr
+
+    # Keep only contours large enough to be the dish (> 10% of image area)
+    min_area = 0.10 * H * W
+    valid = [c for c in contours if cv2.contourArea(c) > min_area]
+    if not valid:
+        print("[vision] correct_perspective: no large contour found, skipping correction.")
+        return img_bgr
+
+    # Fit an ellipse to the largest valid contour
+    # fitEllipse requires at least 5 points
+    dish_contour = max(valid, key=cv2.contourArea)
+    if len(dish_contour) < 5:
+        print("[vision] correct_perspective: contour too small for ellipse fit, skipping.")
+        return img_bgr
+
+    (cx, cy), (axis_w, axis_h), angle_deg = cv2.fitEllipse(dish_contour)
+    major = max(axis_w, axis_h)
+    minor = min(axis_w, axis_h)
+
+    # ------------------------------------------------------------------
+    # 2. Evaluate deformation
+    # ------------------------------------------------------------------
+    if major < 1e-3:
+        print("[vision] correct_perspective: degenerate ellipse, skipping correction.")
+        return img_bgr
+
+    ratio = minor / major
+    print(f"[vision] Perspective ratio: {ratio:.3f}  (minor={minor:.1f}, major={major:.1f}, angle={angle_deg:.1f}°)")
+
+    if ratio >= PERSPECTIVE_CORRECTION_THRESHOLD:
+        print("[vision] Dish is close enough to circular — no correction needed.")
+        return img_bgr
+
+    if ratio < PERSPECTIVE_ABORT_THRESHOLD:
+        raise ValueError(
+            f"Perspective deformation is too extreme to correct reliably "
+            f"(minor/major ratio = {ratio:.3f}, threshold = {PERSPECTIVE_ABORT_THRESHOLD}). "
+            f"Please retake the photo from a more overhead angle. "
+            f"Tip: hold the camera directly above the dish, roughly parallel to the table."
+        )
+
+    # ------------------------------------------------------------------
+    # 3. Build the affine correction matrix
+    #
+    # Goal: scale the image along the ellipse's minor axis so that
+    # minor → major (restoring a circle).
+    #
+    # Steps (all in matrix form so a single warpAffine call suffices):
+    #   T1  translate center of ellipse to origin
+    #   R1  rotate so major axis aligns with X
+    #   S   scale Y by (major / minor)          ← the actual correction
+    #   R2  rotate back
+    #   T2  translate back to original center
+    # ------------------------------------------------------------------
+    scale_factor = major / minor  # how much to stretch the short axis
+
+    # Rotation angle: OpenCV's fitEllipse returns the angle of the *wide* axis
+    # relative to horizontal. We rotate so that axis becomes horizontal, then
+    # scale vertically, then rotate back.
+    theta = np.deg2rad(angle_deg)
+    cos_t, sin_t = np.cos(theta), np.sin(theta)
+
+    # 2×3 affine matrices (homogeneous, last row implicit [0,0,1])
+    T1 = np.array([[1, 0, -cx],
+                   [0, 1, -cy]], dtype=np.float64)
+
+    R1 = np.array([[cos_t,  sin_t, 0],
+                   [-sin_t, cos_t, 0]], dtype=np.float64)
+
+    S  = np.array([[1, 0,            0],
+                   [0, scale_factor, 0]], dtype=np.float64)
+
+    R2 = np.array([[cos_t, -sin_t, 0],
+                   [sin_t,  cos_t, 0]], dtype=np.float64)
+
+    # Chain: M = R2 · S · R1 · T1
+    # We have to work in 3×3 for proper chaining, then drop the last row.
+    def to3x3(m2x3):
+        return np.vstack([m2x3, [0, 0, 1]])
+
+    M3 = to3x3(R2) @ to3x3(S) @ to3x3(R1) @ to3x3(T1)
+
+    # Translate so the corrected ellipse center stays in frame
+    # After the transform, the center maps to M3 · [cx, cy, 1]
+    new_cx = M3[0, 0] * cx + M3[0, 1] * cy + M3[0, 2]
+    new_cy = M3[1, 0] * cx + M3[1, 1] * cy + M3[1, 2]
+
+    # Compute output canvas size (the scale_factor makes the image taller)
+    new_H = int(np.ceil(H * scale_factor))
+    new_W = W
+
+    # Shift so the dish center lands in the middle of the new canvas
+    T2 = np.array([[1, 0, new_W / 2 - new_cx],
+                   [0, 1, new_H / 2 - new_cy],
+                   [0, 0, 1]], dtype=np.float64)
+
+    M_final = (T2 @ M3)[:2]   # back to 2×3 for warpAffine
+
+    # ------------------------------------------------------------------
+    # 4. Apply the warp
+    # ------------------------------------------------------------------
+    corrected = cv2.warpAffine(
+        img_bgr,
+        M_final,
+        (new_W, new_H),
+        flags=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+        borderValue=(0, 0, 0),
+    )
+
+    # Resize back to TARGET_SIZE so downstream code sees a consistent resolution
+    scale_back = TARGET_SIZE / max(new_H, new_W)
+    if scale_back < 1.0:
+        corrected = cv2.resize(
+            corrected,
+            (int(new_W * scale_back), int(new_H * scale_back)),
+            interpolation=cv2.INTER_AREA,
+        )
+
+    print(f"[vision] Perspective corrected: scale_factor={scale_factor:.3f}, "
+          f"output shape={corrected.shape[:2]}")
+    return corrected
 
 
 # ---------------------------------------------------------------------------
@@ -322,6 +502,8 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
 
     Raises:
         ValueError: If image cannot be loaded or is not a valid photo.
+        ValueError: If the camera angle is so extreme that perspective
+                    correction would produce unreliable results.
     """
     # ------------------------------------------------------------------
     # 1. Load & validate image
@@ -346,12 +528,19 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     H, W = img_bgr.shape[:2]
 
     # ------------------------------------------------------------------
-    # 3. Detect dish boundary
+    # 3. Correct perspective distortion (tilted camera → ellipse → circle)
+    #    Raises ValueError if the tilt is too extreme to recover from.
+    # ------------------------------------------------------------------
+    img_bgr = correct_perspective(img_bgr)
+    H, W = img_bgr.shape[:2]   # dimensions may have changed after correction
+
+    # ------------------------------------------------------------------
+    # 4. Detect dish boundary
     # ------------------------------------------------------------------
     dish_mask = _detect_dish_mask(img_bgr)   # bool (H, W)
 
     # ------------------------------------------------------------------
-    # 4. Ask Gemini what ingredients are in the dish
+    # 5. Ask Gemini what ingredients are in the dish
     # ------------------------------------------------------------------
     model = _init_vertex()
     ingredients = _call_gemini(model, image_path)  # list[dict]
@@ -360,7 +549,7 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     ingredient_labels: dict[int, str] = {i: ing["name"] for i, ing in enumerate(ingredients)}
 
     # ------------------------------------------------------------------
-    # 5. Per-ingredient color segmentation (OpenCV HSV)
+    # 6. Per-ingredient color segmentation (OpenCV HSV)
     # ------------------------------------------------------------------
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     ingredient_map = np.zeros((H, W, K), dtype=np.float32)
@@ -375,7 +564,7 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
         ingredient_map[:, :, k] = density
 
     # ------------------------------------------------------------------
-    # 6. Special handling: ensure "base" ingredient (channel 0) covers
+    # 7. Special handling: ensure "base" ingredient (channel 0) covers
     #    the whole dish — fill any pixel that has no detected ingredient
     # ------------------------------------------------------------------
     pixel_total = ingredient_map.sum(axis=2)             # (H, W)
@@ -383,12 +572,12 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     ingredient_map[unclaimed, 0] = 1.0                   # assign to base channel
 
     # ------------------------------------------------------------------
-    # 7. Normalize so channels sum to 1.0 at every dish pixel
+    # 8. Normalize so channels sum to 1.0 at every dish pixel
     # ------------------------------------------------------------------
     ingredient_map = _normalize_map(ingredient_map, dish_mask)
 
     # ------------------------------------------------------------------
-    # 8. Validate output before returning
+    # 9. Validate output before returning
     # ------------------------------------------------------------------
     assert ingredient_map.dtype == np.float32
     assert ingredient_map.shape == (H, W, K)
