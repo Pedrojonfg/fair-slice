@@ -1,0 +1,29 @@
+# =============================================================
+# FairSlice — Python Dependencies
+# Install: pip install -r requirements.txt
+# =============================================================
+
+# --- Core Scientific Stack ---
+numpy>=1.24.0
+scipy>=1.11.0
+scikit-image>=0.21.0
+Pillow>=10.0.0
+
+# --- Google Cloud / Vertex AI ---
+google-cloud-aiplatform>=1.38.0    # Vertex AI SDK (Gemini access)
+google-cloud-vision>=3.4.0         # Cloud Vision API (image labeling)
+google-auth>=2.23.0
+
+# --- Web Backend ---
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6            # for file uploads in FastAPI
+
+# --- Computer Vision ---
+opencv-python-headless>=4.8.0      # image processing, no GUI needed
+
+# --- Testing ---
+pytest>=7.4.0
+
+# --- Utilities ---
+python-dotenv>=1.0.0               # load .env for API keys
