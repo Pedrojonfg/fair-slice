@@ -18,15 +18,15 @@
     .fhero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,245,255,.04),rgba(255,0,228,.04));pointer-events:none}
     .ftop{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
     .flabel{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted)}
-    .fnum{font-size:2.4rem;font-weight:900;letter-spacing:-2px;line-height:1;color:#ffee00;text-shadow:0 0 24px #ffee00}
-    .ftrack{height:5px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden}
+    .fnum{font-size:2rem;font-weight:700;letter-spacing:-1px;line-height:1;color:#4ecdc4}
+    .ftrack{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
     .ffill{height:100%;border-radius:3px;background:#ffee00;width:87%;box-shadow:0 0 10px #ffee00,0 0 20px #ffee0055}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-    .card{border-radius:12px;padding:14px 12px 12px;border:1px solid transparent}
-    .pnum{font-size:2rem;font-weight:900;line-height:1;margin-bottom:12px;text-shadow:0 0 20px currentColor}
+    .card{border-radius:10px;padding:14px 12px;border:1px solid var(--border);background:var(--card)}
+    .pnum{font-size:.85rem;font-weight:600;color:var(--text)}
     .irow{margin-bottom:8px} .irow:last-child{margin-bottom:0}
-    .imeta{display:flex;justify-content:space-between;font-size:.7rem;margin-bottom:3px;color:rgba(255,255,255,.65);font-weight:500}
-    .ipct{font-weight:700;color:rgba(255,255,255,.9)}
+    .imeta{display:flex;justify-content:space-between;font-size:.68rem;margin-bottom:3px;color:var(--muted)}
+    .ipct{font-weight:600;color:var(--text)}
     .itrack{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
     .ifill{height:100%;border-radius:2px}
     .brow{display:flex;gap:12px}
@@ -49,20 +49,18 @@
   <div class="grid" id="g"></div>
   <div class="brow">
     <button class="btn bs">↩ New Photo</button>
-    <button class="btn ba">📤 Share Result</button>
+    <button class="btn ba">Share Result</button>
   </div>
 </main>
 <script>
-const C=["#00f5ff","#ff00e4","#39ff14","#ffee00"];
+const C=["#4ecdc4","#ff6b6b","#95e1d3","#ffbe3c","#6c5ce7","#fd9644","#48dbfb","#ff9ff3"];
 const S=[[0.286,0.293,0.209,0.569,0.333],[0.279,0.303,0.223,0.189,0.402],[0.211,0.195,0.274,0.126,0.259],[0.225,0.209,0.294,0.117,0.006]];
 const L=["dough","sauce","mozz.","pepp.","basil"];
 const ideal=0.25,g=document.getElementById("g");
 S.forEach((ps,i)=>{
   const c=C[i],d=document.createElement("div");
-  d.className="card";d.style.borderColor=c+"55";
-  d.style.background=`linear-gradient(145deg,${c}12,${c}04)`;
-  d.style.boxShadow=`0 0 28px ${c}20,inset 0 0 20px ${c}08`;
-  const n=document.createElement("div");n.className="pnum";n.textContent=i+1;n.style.color=c;d.appendChild(n);
+  d.className="card";
+  const hdr=document.createElement("div");hdr.style.cssText="display:flex;align-items:center;gap:8px;margin-bottom:12px";const dot=document.createElement("div");dot.style.cssText="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:"+c;const n=document.createElement("div");n.className="pnum";n.textContent="Person "+(i+1);hdr.appendChild(dot);hdr.appendChild(n);d.appendChild(hdr);
   ps.forEach((v,k)=>{
     const hi=v>ideal*1.08,r=document.createElement("div");r.className="irow";
     const m=document.createElement("div");m.className="imeta";
@@ -70,7 +68,7 @@ S.forEach((ps,i)=>{
     const t=document.createElement("div");t.className="itrack";
     const f=document.createElement("div");f.className="ifill";
     f.style.width=Math.min(v/(ideal*1.7)*100,100)+"%";
-    f.style.background=hi?c:c+"55";f.style.boxShadow=hi?`0 0 6px ${c}`:"none";
+    f.style.background=hi?c:c+"66";
     t.appendChild(f);r.appendChild(m);r.appendChild(t);d.appendChild(r);
   });
   g.appendChild(d);

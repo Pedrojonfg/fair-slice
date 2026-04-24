@@ -301,76 +301,81 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 20px;
+      padding: 18px 20px;
       margin-bottom: 12px;
-      position: relative;
-      overflow: hidden;
     }
-    .fairness-hero::before { display: none; }
     .fairness-top {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     .fairness-label-neon {
-      font-size: .72rem;
-      font-weight: 700;
+      font-size: .75rem;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: .8px;
       color: var(--muted);
     }
     #fairness-pct {
-      font-size: 2.4rem;
-      font-weight: 900;
-      letter-spacing: -2px;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -1px;
       line-height: 1;
       transition: color .4s;
     }
     .fairness-bar-track {
-      height: 5px;
-      background: rgba(255,255,255,.07);
-      border-radius: 3px;
-      overflow: visible;
+      height: 6px;
+      background: rgba(255,255,255,.08);
+      border-radius: 4px;
+      overflow: hidden;
     }
     #fairness-bar {
       height: 100%;
-      border-radius: 3px;
-      transition: width .9s cubic-bezier(.4,0,.2,1), box-shadow .4s;
+      border-radius: 4px;
+      transition: width .9s cubic-bezier(.4,0,.2,1);
     }
 
     /* Person grid */
     .person-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 14px;
     }
     .person-card {
-      border-radius: 12px;
-      padding: 14px 12px 12px;
-      border: 1px solid transparent;
-      position: relative;
-      overflow: hidden;
+      border-radius: 10px;
+      padding: 14px 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .person-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .person-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
     .person-num {
-      font-size: 2rem;
-      font-weight: 900;
-      line-height: 1;
-      margin-bottom: 12px;
-      text-shadow: 0 0 20px currentColor;
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--text);
     }
-    .ing-row { margin-bottom: 8px; }
+    .ing-row { margin-bottom: 7px; }
     .ing-row:last-child { margin-bottom: 0; }
     .ing-meta {
       display: flex;
       justify-content: space-between;
-      font-size: .7rem;
+      font-size: .68rem;
       margin-bottom: 3px;
-      color: rgba(255,255,255,.65);
-      font-weight: 500;
+      color: var(--muted);
     }
-    .ing-meta .ing-pct { font-weight: 700; color: rgba(255,255,255,.9); }
+    .ing-meta .ing-pct { font-weight: 600; color: var(--text); }
     .ing-track {
       height: 3px;
       background: rgba(255,255,255,.08);
@@ -688,15 +693,18 @@
 
         const card = document.createElement("div");
         card.className = "person-card";
-        card.style.borderColor = color + "40";
-        card.style.background = `${color}0d`;
-        card.style.boxShadow = "none";
 
+        const header = document.createElement("div");
+        header.className = "person-header";
+        const dot = document.createElement("div");
+        dot.className = "person-dot";
+        dot.style.background = color;
         const num = document.createElement("div");
         num.className = "person-num";
-        num.textContent = i + 1;
-        num.style.color = color;
-        card.appendChild(num);
+        num.textContent = `Person ${i + 1}`;
+        header.appendChild(dot);
+        header.appendChild(num);
+        card.appendChild(header);
 
         for (let k = 0; k < K; k++) {
           const ingName = labels[String(k)] || `ing${k}`;
