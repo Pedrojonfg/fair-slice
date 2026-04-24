@@ -292,7 +292,7 @@
       overflow: hidden;
       margin-bottom: 14px;
       background: #000;
-      box-shadow: 0 0 40px rgba(0,245,255,.1);
+      box-shadow: var(--shadow);
     }
     .result-img-wrap img { width: 100%; display: block; }
 
@@ -306,13 +306,7 @@
       position: relative;
       overflow: hidden;
     }
-    .fairness-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(0,245,255,.04) 0%, rgba(255,0,228,.04) 100%);
-      pointer-events: none;
-    }
+    .fairness-hero::before { display: none; }
     .fairness-top {
       display: flex;
       align-items: center;
@@ -331,7 +325,6 @@
       font-weight: 900;
       letter-spacing: -2px;
       line-height: 1;
-      text-shadow: 0 0 24px currentColor;
       transition: color .4s;
     }
     .fairness-bar-track {
@@ -525,10 +518,10 @@
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
-    // ── Colour palette — neon (must match visualize.py PERSON_COLORS) ──
+    // ── Colour palette (must match visualize.py PERSON_COLORS) ──
     const COLORS = [
-      "#00f5ff", "#ff00e4", "#39ff14", "#ffee00",
-      "#bf00ff", "#ff6b00", "#0090ff", "#ff1493",
+      "#4ecdc4", "#ff6b6b", "#95e1d3", "#ffbe3c",
+      "#6c5ce7", "#fd9644", "#48dbfb", "#ff9ff3",
     ];
 
     // ── State ──────────────────────────────────────────────────────────
@@ -673,12 +666,12 @@
 
       // Fairness
       const pct = Math.round((data.fairness || 0) * 100);
-      const neonColor = pct >= 90 ? "#39ff14" : pct >= 70 ? "#ffee00" : "#ff003c";
+      const barColor = pct >= 90 ? "#4ecdc4" : pct >= 70 ? "#ffbe3c" : "#ff6b6b";
       fairnessPct.textContent = `${pct}%`;
-      fairnessPct.style.color = neonColor;
+      fairnessPct.style.color = barColor;
       fairnessBar.style.width = `${pct}%`;
-      fairnessBar.style.background = neonColor;
-      fairnessBar.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}55`;
+      fairnessBar.style.background = barColor;
+      fairnessBar.style.boxShadow = "none";
 
       // Person cards
       breakdown.innerHTML = "";
@@ -695,9 +688,9 @@
 
         const card = document.createElement("div");
         card.className = "person-card";
-        card.style.borderColor = color + "55";
-        card.style.background = `linear-gradient(145deg, ${color}10, ${color}04)`;
-        card.style.boxShadow = `0 0 24px ${color}18, inset 0 0 24px ${color}06`;
+        card.style.borderColor = color + "40";
+        card.style.background = `${color}0d`;
+        card.style.boxShadow = "none";
 
         const num = document.createElement("div");
         num.className = "person-num";
@@ -724,7 +717,7 @@
           // Scale so ideal = ~60% bar width
           fill.style.width = `${Math.min(val / (ideal * 1.7) * 100, 100)}%`;
           fill.style.background = isAbove ? color : color + "66";
-          fill.style.boxShadow = isAbove ? `0 0 5px ${color}` : "none";
+          fill.style.boxShadow = "none";
 
           track.appendChild(fill);
           row.appendChild(meta);

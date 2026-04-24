@@ -17,14 +17,14 @@ from PIL import Image, ImageDraw, ImageFont
 # Color palette — up to 8 people (R, G, B, overlay_alpha)
 # ---------------------------------------------------------------------------
 PERSON_COLORS: list[tuple[int, int, int, int]] = [
-    (  0, 245, 255, 195),   # neon cyan
-    (255,   0, 228, 195),   # neon magenta
-    ( 57, 255,  20, 185),   # neon green
-    (255, 238,   0, 175),   # neon yellow
-    (191,   0, 255, 195),   # neon purple
-    (255, 107,   0, 195),   # neon orange
-    (  0, 144, 255, 195),   # neon blue
-    (255,  20, 147, 195),   # neon pink
+    ( 78, 205, 196, 110),   # teal
+    (255, 107, 107, 110),   # coral
+    (149, 225, 211, 105),   # mint
+    (255, 190,  60, 100),   # amber
+    (108,  92, 231, 110),   # indigo
+    (253, 150,  68, 110),   # orange
+    ( 72, 219, 251, 110),   # sky
+    (255, 159, 243, 110),   # lilac
 ]
 
 BOUNDARY_THICKNESS = 3  # pixels
