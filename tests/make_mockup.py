@@ -6,18 +6,13 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src', 'fair-slice'))
 
 import numpy as np
-import tempfile
 from PIL import Image
 from visualize import render_partition
 
 SIZE = 500
 RNG = np.random.default_rng(7)
 
-# ── Crear fondo oscuro neutro (sin imagen de pizza) ───────────────────
-bg = Image.new("RGB", (SIZE, SIZE), (18, 18, 30))  # #12121e dark navy
-_tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
-bg.save(_tmp.name)
-img_path = _tmp.name
+img_path = "Neapolitan_Pizza_-_Web_1c60fb1e-76dd-42a8-bdda-d3ab84d0231f.webp"
 
 imap = np.load("tests/fixtures/mock_data/pizza_mock_500.npy")
 labels = {0: "dough", 1: "sauce", 2: "mozzarella", 3: "pepperoni", 4: "basil"}
