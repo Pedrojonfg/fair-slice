@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FairSlice" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>FairSlice 🍕</title>
+
+  <style>
+    /* ─── Reset & base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #0f0f1a;
+      --card:       #1a1a2e;
+      --card2:      #22223a;
+      --border:     #2e2e50;
+      --accent:     #e94560;
+      --accent2:    #f5a623;
+      --text:       #e8e8f0;
+      --muted:      #7878aa;
+      --success:    #2dd36f;
+      --warning:    #ffc409;
+      --danger:     #eb445a;
+      --radius:     14px;
+      --shadow:     0 4px 24px rgba(0,0,0,.45);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 16px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ─── Layout ────────────────────────────────────────────────────── */
+    body { display: flex; flex-direction: column; min-height: 100dvh; }
+
+    header {
+      padding: 18px 20px 14px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -.3px; }
+    header p  { font-size: .8rem; color: var(--muted); }
+    header .mockup-link {
+      margin-left: auto;
+      padding: 6px 12px;
+      font-size: .75rem;
+      background: rgba(233,69,96,.2);
+      border: 1px solid rgba(233,69,96,.4);
+      border-radius: 6px;
+      color: #e94560;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    header .mockup-link:hover { background: rgba(233,69,96,.3); }
+
+    main {
+      flex: 1;
+      padding: 20px 16px 32px;
+      max-width: 640px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    section { display: none; }
+    section.active { display: block; }
+
+    /* ─── Cards ─────────────────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 16px; }
+
+    /* ─── Upload zone ───────────────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      user-select: none;
+    }
+    #drop-zone:hover, #drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(233,69,96,.06);
+    }
+    #drop-zone .icon { font-size: 3.5rem; line-height: 1; margin-bottom: 14px; }
+    #drop-zone h2   { font-size: 1.1rem; margin-bottom: 6px; }
+    #drop-zone p    { font-size: .85rem; color: var(--muted); margin-bottom: 24px; }
+
+    #file-input { display: none; }
+
+    /* ─── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); opacity: .85; }
+    .btn-primary  { background: var(--accent);  color: #fff; }
+    .btn-secondary{ background: var(--card2);   color: var(--text); border: 1px solid var(--border); }
+    .btn-action   {
+      width: 100%;
+      padding: 16px;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(233,69,96,.4);
+    }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ─── Photo preview ─────────────────────────────────────────────── */
+    .photo-wrap {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 16px;
+      max-height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .photo-wrap img {
+      width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      display: block;
+    }
+    #change-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 6px 14px;
+      font-size: .8rem;
+      background: rgba(0,0,0,.6);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* ─── Controls ──────────────────────────────────────────────────── */
+    .control-label {
+      font-size: .8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* Stepper */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .stepper button {
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: var(--card2);
+      color: var(--text);
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .stepper button:hover { background: var(--border); }
+    .stepper button:active { background: var(--accent); color: #fff; }
+    #n-display {
+      min-width: 48px;
+      text-align: center;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: var(--card);
+      padding: 0 4px;
+      height: 44px;
+      line-height: 44px;
+    }
+
+    /* Mode toggle */
+    .mode-btns {
+      display: flex;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border: none;
+      background: var(--card2);
+      color: var(--muted);
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+    .mode-hint {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ─── Loading ───────────────────────────────────────────────────── */
+    #loading-section {
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      text-align: center;
+    }
+    #loading-section.active { display: flex; }
+    .spinner-pizza {
+      font-size: 4rem;
+      animation: spin 1.4s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-title  { font-size: 1.2rem; font-weight: 600; }
+    .loading-sub    { font-size: .85rem; color: var(--muted); }
+
+    .progress-bar-bg {
+      width: 200px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      animation: indeterminate 1.6s ease-in-out infinite;
+      transform-origin: left;
+    }
+    @keyframes indeterminate {
+      0%   { transform: scaleX(0) translateX(0%); }
+      50%  { transform: scaleX(.6) translateX(80%); }
+      100% { transform: scaleX(0) translateX(200%); }
+    }
+
+    /* ─── Result ────────────────────────────────────────────────────── */
+    .result-img-wrap {
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 14px;
+      background: #000;
+      box-shadow: 0 0 40px rgba(0,245,255,.1);
+    }
+    .result-img-wrap img { width: 100%; display: block; }
+
+    /* Fairness hero */
+    .fairness-hero {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .fairness-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0,245,255,.04) 0%, rgba(255,0,228,.04) 100%);
+      pointer-events: none;
+    }
+    .fairness-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .fairness-label-neon {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+    }
+    #fairness-pct {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      text-shadow: 0 0 24px currentColor;
+      transition: color .4s;
+    }
+    .fairness-bar-track {
+      height: 5px;
+      background: rgba(255,255,255,.07);
+      border-radius: 3px;
+      overflow: visible;
+    }
+    #fairness-bar {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .9s cubic-bezier(.4,0,.2,1), box-shadow .4s;
+    }
+
+    /* Person grid */
+    .person-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .person-card {
+      border-radius: 12px;
+      padding: 14px 12px 12px;
+      border: 1px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+    .person-num {
+      font-size: 2rem;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 12px;
+      text-shadow: 0 0 20px currentColor;
+    }
+    .ing-row { margin-bottom: 8px; }
+    .ing-row:last-child { margin-bottom: 0; }
+    .ing-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: .7rem;
+      margin-bottom: 3px;
+      color: rgba(255,255,255,.65);
+      font-weight: 500;
+    }
+    .ing-meta .ing-pct { font-weight: 700; color: rgba(255,255,255,.9); }
+    .ing-track {
+      height: 3px;
+      background: rgba(255,255,255,.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ing-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width .7s ease;
+    }
+
+    /* Error */
+    .error-card {
+      background: rgba(235,68,90,.12);
+      border: 1px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 16px;
+      color: var(--danger);
+      margin-bottom: 14px;
+      font-size: .9rem;
+    }
+
+    /* Bottom action button */
+    .bottom-action { margin-top: 4px; }
+
+    /* ─── Responsive ─────────────────────────────────────────────────── */
+    @media (min-width: 500px) {
+      .control-row { gap: 24px; }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>🍕 FairSlice</h1>
+      <p>Mathematically fair dish division</p>
+    </div>
+    <a href="/mockup.html" class="mockup-link" target="_blank">👁 See Mockup</a>
+  </header>
+
+  <main>
+
+    <!-- ── STATE: Upload ───────────────────────────────────────────── -->
+    <section id="upload-section" class="active">
+      <div id="drop-zone" role="button" tabindex="0" aria-label="Upload dish photo">
+        <div class="icon">📷</div>
+        <h2>Upload a dish photo</h2>
+        <p>Tap to take a photo, or drag &amp; drop an image here</p>
+        <label for="file-input" class="btn btn-primary" onclick="event.stopPropagation()">
+          Choose Photo
+        </label>
+        <input
+          id="file-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+        />
+      </div>
+    </section>
+
+    <!-- ── STATE: Configure ────────────────────────────────────────── -->
+    <section id="config-section">
+      <div class="photo-wrap">
+        <img id="preview-img" alt="Dish preview" />
+        <button id="change-btn">✕ Change</button>
+      </div>
+
+      <div class="card">
+        <!-- People selector -->
+        <div class="control-label">How many people?</div>
+        <div class="control-row">
+          <div class="stepper">
+            <button id="dec-btn" aria-label="Fewer people">−</button>
+            <div id="n-display">4</div>
+            <button id="inc-btn" aria-label="More people">+</button>
+          </div>
+          <span id="people-hint" style="font-size:.85rem;color:var(--muted)">4 equal slices</span>
+        </div>
+
+        <!-- Algorithm mode -->
+        <div class="control-label">Algorithm</div>
+        <div class="mode-btns" role="group" aria-label="Partition algorithm">
+          <button class="mode-btn active" data-mode="free">🧮 Smart (Voronoi)</button>
+          <button class="mode-btn" data-mode="radial">⚡ Quick (Radial)</button>
+        </div>
+        <p class="mode-hint" id="mode-hint">Optimal connected regions — fairer but slower</p>
+
+        <!-- Slice button -->
+        <div style="margin-top:24px">
+          <button id="slice-btn" class="btn btn-action">🔪 Slice It!</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STATE: Loading ──────────────────────────────────────────── -->
+    <section id="loading-section">
+      <div class="spinner-pizza">🍕</div>
+      <div>
+        <div class="loading-title">Computing fairest split…</div>
+        <div class="loading-sub">Vision + partition algorithms running</div>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill"></div>
+      </div>
+    </section>
+
+    <!-- ── STATE: Result ───────────────────────────────────────────── -->
+    <section id="result-section">
+      <div id="error-box" class="error-card" hidden></div>
+
+      <div class="result-img-wrap">
+        <img id="result-img" alt="Sliced dish" />
+      </div>
+
+      <div class="fairness-hero">
+        <div class="fairness-top">
+          <span class="fairness-label-neon">Fairness Score</span>
+          <span id="fairness-pct">—</span>
+        </div>
+        <div class="fairness-bar-track">
+          <div id="fairness-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div id="breakdown" class="person-grid"></div>
+
+      <div class="bottom-action">
+        <button id="new-photo-btn" class="btn btn-secondary" style="width:100%">
+          ↩ New Photo
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* ──────────────────────────────────────────────────────────────────
+       FairSlice PWA — frontend logic
+       ──────────────────────────────────────────────────────────────── */
+
+    // Register service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    // ── Colour palette — neon (must match visualize.py PERSON_COLORS) ──
+    const COLORS = [
+      "#00f5ff", "#ff00e4", "#39ff14", "#ffee00",
+      "#bf00ff", "#ff6b00", "#0090ff", "#ff1493",
+    ];
+
+    // ── State ──────────────────────────────────────────────────────────
+    let selectedFile = null;
+    let nPeople = 4;
+    let mode = "free";
+
+    // ── Elements ──────────────────────────────────────────────────────
+    const sections = {
+      upload:  document.getElementById("upload-section"),
+      config:  document.getElementById("config-section"),
+      loading: document.getElementById("loading-section"),
+      result:  document.getElementById("result-section"),
+    };
+
+    const dropZone    = document.getElementById("drop-zone");
+    const fileInput   = document.getElementById("file-input");
+    const previewImg  = document.getElementById("preview-img");
+    const changeBtn   = document.getElementById("change-btn");
+    const decBtn      = document.getElementById("dec-btn");
+    const incBtn      = document.getElementById("inc-btn");
+    const nDisplay    = document.getElementById("n-display");
+    const peopleHint  = document.getElementById("people-hint");
+    const modeButtons = document.querySelectorAll(".mode-btn");
+    const modeHint    = document.getElementById("mode-hint");
+    const sliceBtn    = document.getElementById("slice-btn");
+    const resultImg   = document.getElementById("result-img");
+    const fairnessPct = document.getElementById("fairness-pct");
+    const fairnessBar = document.getElementById("fairness-bar");
+    const breakdown   = document.getElementById("breakdown");
+    const errorBox    = document.getElementById("error-box");
+    const newPhotoBtn = document.getElementById("new-photo-btn");
+
+    // ── State machine ─────────────────────────────────────────────────
+    function showSection(name) {
+      Object.values(sections).forEach((s) => s.classList.remove("active"));
+      sections[name].classList.add("active");
+    }
+
+    // ── File handling ─────────────────────────────────────────────────
+    function loadFile(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        alert("Please select an image file.");
+        return;
+      }
+      selectedFile = file;
+      previewImg.src = URL.createObjectURL(file);
+      showSection("config");
+    }
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files[0]) loadFile(e.target.files[0]);
+    });
+
+    // Click on drop zone (but not the label/button inside)
+    dropZone.addEventListener("click", (e) => {
+      if (e.target.tagName !== "LABEL" && e.target.tagName !== "INPUT") {
+        fileInput.click();
+      }
+    });
+    dropZone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") fileInput.click();
+    });
+
+    // Drag & drop
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      loadFile(e.dataTransfer.files[0]);
+    });
+
+    // Change photo
+    changeBtn.addEventListener("click", () => {
+      selectedFile = null;
+      fileInput.value = "";
+      showSection("upload");
+    });
+
+    // ── People stepper ────────────────────────────────────────────────
+    function updateN(delta) {
+      nPeople = Math.max(2, Math.min(8, nPeople + delta));
+      nDisplay.textContent = nPeople;
+      peopleHint.textContent = `${nPeople} equal ${nPeople === 1 ? "slice" : "slices"}`;
+      decBtn.disabled = nPeople <= 2;
+      incBtn.disabled = nPeople >= 8;
+    }
+    decBtn.addEventListener("click", () => updateN(-1));
+    incBtn.addEventListener("click", () => updateN(+1));
+    updateN(0); // initialise
+
+    // ── Mode toggle ───────────────────────────────────────────────────
+    const MODE_HINTS = {
+      free:   "Optimal connected regions — fairer but slower (~20s)",
+      radial: "Radial cuts from centre — faster (~5s)",
+    };
+    modeButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        modeButtons.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        mode = btn.dataset.mode;
+        modeHint.textContent = MODE_HINTS[mode];
+      });
+    });
+
+    // ── Slice! ────────────────────────────────────────────────────────
+    sliceBtn.addEventListener("click", runPipeline);
+
+    async function runPipeline() {
+      if (!selectedFile) return;
+
+      showSection("loading");
+
+      const fd = new FormData();
+      fd.append("image",    selectedFile);
+      fd.append("n_people", nPeople);
+      fd.append("mode",     mode);
+
+      try {
+        const res = await fetch("/api/slice", { method: "POST", body: fd });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.detail || `Server error ${res.status}`);
+        }
+
+        showResult(data);
+      } catch (err) {
+        showError(err.message || "Unknown error");
+      }
+    }
+
+    // ── Show result ───────────────────────────────────────────────────
+    function showResult(data) {
+      errorBox.hidden = true;
+
+      resultImg.src = `data:image/png;base64,${data.result_image}`;
+
+      // Fairness
+      const pct = Math.round((data.fairness || 0) * 100);
+      const neonColor = pct >= 90 ? "#39ff14" : pct >= 70 ? "#ffee00" : "#ff003c";
+      fairnessPct.textContent = `${pct}%`;
+      fairnessPct.style.color = neonColor;
+      fairnessBar.style.width = `${pct}%`;
+      fairnessBar.style.background = neonColor;
+      fairnessBar.style.boxShadow = `0 0 10px ${neonColor}, 0 0 20px ${neonColor}55`;
+
+      // Person cards
+      breakdown.innerHTML = "";
+      const scores = data.scores || [];
+      const labels = data.ingredient_labels || {};
+      const K = Object.keys(labels).length;
+      const N = scores.length;
+      const ideal = 1 / N;
+
+      breakdown.style.gridTemplateColumns = N <= 2 ? "1fr" : "1fr 1fr";
+
+      scores.forEach((ps, i) => {
+        const color = COLORS[i % COLORS.length];
+
+        const card = document.createElement("div");
+        card.className = "person-card";
+        card.style.borderColor = color + "55";
+        card.style.background = `linear-gradient(145deg, ${color}10, ${color}04)`;
+        card.style.boxShadow = `0 0 24px ${color}18, inset 0 0 24px ${color}06`;
+
+        const num = document.createElement("div");
+        num.className = "person-num";
+        num.textContent = i + 1;
+        num.style.color = color;
+        card.appendChild(num);
+
+        for (let k = 0; k < K; k++) {
+          const ingName = labels[String(k)] || `ing${k}`;
+          const val = ps[k] || 0;
+          const isAbove = val > ideal * 1.08;
+
+          const row = document.createElement("div");
+          row.className = "ing-row";
+
+          const meta = document.createElement("div");
+          meta.className = "ing-meta";
+          meta.innerHTML = `<span>${ingName}</span><span class="ing-pct">${(val*100).toFixed(0)}%</span>`;
+
+          const track = document.createElement("div");
+          track.className = "ing-track";
+          const fill = document.createElement("div");
+          fill.className = "ing-fill";
+          // Scale so ideal = ~60% bar width
+          fill.style.width = `${Math.min(val / (ideal * 1.7) * 100, 100)}%`;
+          fill.style.background = isAbove ? color : color + "66";
+          fill.style.boxShadow = isAbove ? `0 0 5px ${color}` : "none";
+
+          track.appendChild(fill);
+          row.appendChild(meta);
+          row.appendChild(track);
+          card.appendChild(row);
+        }
+
+        breakdown.appendChild(card);
+      });
+
+      showSection("result");
+    }
+
+    // ── Show error ────────────────────────────────────────────────────
+    function showError(msg) {
+      errorBox.textContent = `⚠ ${msg}`;
+      errorBox.hidden = false;
+      resultImg.src = "";
+      fairnessPct.textContent = "—";
+      fairnessBar.style.width = "0%";
+      breakdown.innerHTML = "";
+      showSection("result");
+    }
+
+    // ── New photo ─────────────────────────────────────────────────────
+    newPhotoBtn.addEventListener("click", () => {
+      selectedFile = null;
+      fileInput.value = "";
+      resultImg.src = "";
+      showSection("upload");
+    });
+  </script>
+</body>
+</html>
