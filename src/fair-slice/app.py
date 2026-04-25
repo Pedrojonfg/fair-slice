@@ -62,6 +62,12 @@ def _screen_preferences() -> None:
         st.image(image_path, caption="Uploaded photo", use_container_width=True)
 
     with col2:
+        mode_label = st.selectbox(
+            "Cut mode",
+            options=["free", "radial"],
+            index=0,
+            format_func=lambda m: "Convex (free)" if m == "free" else "Radial",
+        )
         equitable = st.checkbox("Equal split (no preferences)", value=False)
 
         ingredient_keys = _sorted_ingredient_keys(labels)
@@ -96,7 +102,7 @@ def _screen_preferences() -> None:
                 result = compute_partition(
                     st.session_state.ingredient_map,
                     n_people,
-                    mode="free",
+                    mode=mode_label,
                     preferences=P,
                 )
 
