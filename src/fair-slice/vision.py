@@ -27,6 +27,7 @@ from PIL import Image
 TARGET_SIZE = 500           # Resize longest edge to this before any processing
 MAX_INGREDIENTS = 8         # Hard cap — group beyond this
 MIN_INGREDIENTS = 2         # Gemini must return at least this many
+MIN_CHANNEL_MEAN_COVERAGE = 0.02  # canales con media < esto sobre dish_mask se eliminan
 
 # Perspective correction thresholds (minor_axis / major_axis ratio)
 # A perfect top-down photo → ratio = 1.0
@@ -585,7 +586,35 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     ingredient_map = _normalize_map(ingredient_map, dish_mask)
 
     # ------------------------------------------------------------------
-    # 9. Validate output before returning
+    # 9. Filter channels with insufficient mean coverage (after normalize)
+    # ------------------------------------------------------------------
+    if dish_pixels > 0 and K > 1:
+        to_drop: list[int] = []
+        for k in range(K):
+            mean_k = float(ingredient_map[:, :, k][dish_mask].mean())
+            if mean_k < MIN_CHANNEL_MEAN_COVERAGE:
+                if k == 0:
+                    # Base channel is never removed (README convention).
+                    print(
+                        f"[vision] Canal {k} ({ingredient_labels[k]}) marcado para eliminación "
+                        f"pero preservado (base): media={mean_k:.4f} < umbral"
+                    )
+                    continue
+                to_drop.append(k)
+                print(
+                    f"[vision] Canal {k} ({ingredient_labels[k]}) eliminado: "
+                    f"media={mean_k:.4f} < umbral"
+                )
+
+        if to_drop:
+            keep = [k for k in range(K) if k not in set(to_drop)]
+            ingredient_map = ingredient_map[:, :, keep]
+            ingredient_labels = {new_i: ingredient_labels[old_i] for new_i, old_i in enumerate(keep)}
+            ingredient_map = _normalize_map(ingredient_map, dish_mask)
+            K = ingredient_map.shape[-1]
+
+    # ------------------------------------------------------------------
+    # 10. Validate output before returning
     # ------------------------------------------------------------------
     assert ingredient_map.dtype == np.float32
     assert ingredient_map.shape == (H, W, K)
