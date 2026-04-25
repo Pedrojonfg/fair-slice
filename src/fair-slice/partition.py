@@ -93,6 +93,12 @@ def compute_partition(
         ValueError on invalid inputs.
     """
     _validate_inputs(ingredient_map, n_people, mode, preferences)
+    # Degenerate dish: a single dish pixel cannot form meaningful connected regions.
+    dish_pixels = int((ingredient_map.sum(axis=-1) > _EPS_DISH).sum())
+    if dish_pixels == 0:
+        raise ValueError("ingredient_map has no dish pixels (all-zero).")
+    if dish_pixels <= 1:
+        raise ValueError("ingredient_map dish has too few pixels")
     P_norm = _normalize_preferences(preferences, n_people, ingredient_map.shape[-1])
 
     if mode == "radial":
@@ -128,6 +134,8 @@ def _validate_inputs(
         raise ValueError(f"ingredient_map must have at least 1 channel, got K={K}")
     if H < 4 or W < 4:
         raise ValueError(f"ingredient_map too small: {H}x{W}")
+    if not np.isfinite(ingredient_map).all():
+        raise ValueError("ingredient_map contains NaN or Inf")
     if mode not in ("free", "radial"):
         raise ValueError(f"mode must be 'free' or 'radial', got {mode!r}")
 
