@@ -13,6 +13,7 @@ Pillow>=10.0.0
 google-cloud-aiplatform>=1.38.0    # Vertex AI SDK (Gemini access)
 google-cloud-vision>=3.4.0         # Cloud Vision API (image labeling)
 google-auth>=2.23.0
+google-generativeai
 
 # --- Web Backend ---
 fastapi>=0.104.0
