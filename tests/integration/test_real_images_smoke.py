@@ -109,14 +109,46 @@ def test_real_images_pipeline_smoke():
         print(f"labels: {labels_dict}")
 
         runs: dict[str, dict] = {}
-        for N in (3, 4):
+        # Run a mix of scenarios:
+        # - Uniform preferences at N=3 and N=4 (baseline)
+        # - A larger partition N>4
+        # - A non-uniform preference matrix (complex preferences)
+        rng = np.random.default_rng(abs(hash(filename)) % (2**32))
+        run_specs: list[dict] = [
+            {"N": 3, "tag": "uniform", "preferences": None},
+            {"N": 4, "tag": "uniform", "preferences": None},
+            {"N": 6, "tag": "uniform", "preferences": None},
+        ]
+        if K >= 2:
+            N_pref = 5
+            P = rng.lognormal(mean=0.0, sigma=0.9, size=(N_pref, K)).astype(np.float32)
+            # Make preferences structured and challenging (deterministic):
+            # - One person strongly values the most concentrated non-base channel (if any)
+            # - Another person strongly dislikes it (near-zero but non-negative)
+            if K > 1:
+                P[0, 1] *= 12.0
+                P[1, 1] *= 0.05
+            # - Encourage a couple of "specialists"
+            if K > 2:
+                P[2, 2] *= 8.0
+            if K > 3:
+                P[3, 3] *= 6.0
+            run_specs.append({"N": N_pref, "tag": "complex_prefs", "preferences": P})
+
+        for spec in run_specs:
+            N = int(spec["N"])
+            tag = str(spec["tag"])
+            preferences = spec["preferences"]
             t1 = time.perf_counter()
-            r = compute_partition(imap, N, mode="free")
+            r = compute_partition(imap, N, mode="free", preferences=preferences)
             t_part = time.perf_counter() - t1
 
             fairness_relative = float(r["fairness"])
             scores = np.asarray(r["scores"], dtype=float)
-            P_norm = np.full((N, K), 1.0 / float(N), dtype=np.float64)
+            if preferences is None:
+                P_norm = np.full((N, K), 1.0 / float(N), dtype=np.float64)
+            else:
+                P_norm = partition_mod._normalize_preferences(np.asarray(preferences), N, K)
             n_ing = int(active_channels.sum()) if bool(active_channels.any()) else int(K)
             fairness = float(partition_mod._compute_fairness(scores, P_norm, active_channels))
             fairness_complexity_adjusted = float(
@@ -131,7 +163,7 @@ def test_real_images_pipeline_smoke():
 
             fairness_flag = " [LOW FAIRNESS]" if fairness_relative < 0.6 else ""
             print(
-                f"\ncompute_partition N={N} (free): runtime={t_part:.3f}s, "
+                f"\ncompute_partition N={N} (free, {tag}): runtime={t_part:.3f}s, "
                 f"fairness={fairness:.3f}, fairness_complexity_adjusted={fairness_complexity_adjusted:.3f}, "
                 f"fairness_relative={fairness_relative:.3f}, "
                 f"fairness_relative_active={fairness_relative_active:.3f}{fairness_flag}"
@@ -147,10 +179,10 @@ def test_real_images_pipeline_smoke():
                 row = " | ".join(f"{scores[i, k]:.3f}" for k in range(K))
                 print(f"{i:>10} | {row}")
 
-            # Per-ingredient deviation from the uniform ideal 1/N
+            # Per-ingredient deviations (uniform ideal and preference targets)
             ideal = 1.0 / float(N)
             per_ing = {}
-            print("\nPer-ingredient deviation (max(|scores[:,k] - 1/N|)):")
+            print("\nPer-ingredient deviation:")
             # Importance weights used by the relative fairness aggregation:
             # w_j ∝ sum_i P_norm[i, j], normalized over active channels.
             importance = P_norm.sum(axis=0).astype(float)  # (K,)
@@ -164,20 +196,28 @@ def test_real_images_pipeline_smoke():
                 ingredient_importance[active_channels] = importance[active_channels] / importance_active_sum
             for k in range(K):
                 name = labels_dict.get(k, f"channel_{k}")
-                dev = float(np.max(np.abs(scores[:, k] - ideal)))
+                dev_uniform = float(np.max(np.abs(scores[:, k] - ideal)))
+                dev_target = float(np.max(np.abs(scores[:, k] - P_norm[:, k])))
                 per_ing[k] = {
                     "name": name,
-                    "max_abs_dev": dev,
+                    "max_abs_dev_uniform": dev_uniform,
+                    "max_abs_dev_target": dev_target,
                     "ideal": ideal,
                     "active": bool(active_channels[k]),
                     "ingredient_importance": float(ingredient_importance[k]),
                 }
                 active_tag = "active" if active_channels[k] else "inactive"
-                print(f"- {name} ({active_tag}): {dev:.3f} (importance={ingredient_importance[k]:.3f})")
-                ingredient_deviation_accum.setdefault(name, []).append(dev)
+                print(
+                    f"- {name} ({active_tag}): "
+                    f"dev_uniform={dev_uniform:.3f}, dev_target={dev_target:.3f} "
+                    f"(importance={ingredient_importance[k]:.3f})"
+                )
+                ingredient_deviation_accum.setdefault(name, []).append(dev_uniform)
 
-            runs[str(N)] = {
+            run_key = f"N={N}_{tag}"
+            runs[run_key] = {
                 "N": N,
+                "tag": tag,
                 "runtime_s": t_part,
                 "fairness": fairness,
                 "fairness_complexity_adjusted": fairness_complexity_adjusted,
@@ -186,6 +226,7 @@ def test_real_images_pipeline_smoke():
                 "scores": scores.tolist(),
                 "ingredient_columns": col_names,
                 "ingredient_fairness_deviation": per_ing,
+                "preferences": None if preferences is None else np.asarray(preferences).tolist(),
                 "flags": {
                     "low_fairness": fairness_relative < 0.6,
                 },
@@ -211,17 +252,17 @@ def test_real_images_pipeline_smoke():
             {
                 "image": filename,
                 "K": K,
-                "fairness_N3": float(runs["3"]["fairness"]),
-                "fairness_N4": float(runs["4"]["fairness"]),
-                "fairness_N3_complexity_adjusted": float(runs["3"]["fairness_complexity_adjusted"]),
-                "fairness_N4_complexity_adjusted": float(runs["4"]["fairness_complexity_adjusted"]),
-                "fairness_N3_relative": float(runs["3"]["fairness_relative"]),
-                "fairness_N4_relative": float(runs["4"]["fairness_relative"]),
-                "fairness_N3_relative_active": float(runs["3"]["fairness_relative_active"]),
-                "fairness_N4_relative_active": float(runs["4"]["fairness_relative_active"]),
+                "fairness_N3": float(runs["N=3_uniform"]["fairness"]),
+                "fairness_N4": float(runs["N=4_uniform"]["fairness"]),
+                "fairness_N3_complexity_adjusted": float(runs["N=3_uniform"]["fairness_complexity_adjusted"]),
+                "fairness_N4_complexity_adjusted": float(runs["N=4_uniform"]["fairness_complexity_adjusted"]),
+                "fairness_N3_relative": float(runs["N=3_uniform"]["fairness_relative"]),
+                "fairness_N4_relative": float(runs["N=4_uniform"]["fairness_relative"]),
+                "fairness_N3_relative_active": float(runs["N=3_uniform"]["fairness_relative_active"]),
+                "fairness_N4_relative_active": float(runs["N=4_uniform"]["fairness_relative_active"]),
                 "runtime_vision_s": float(t_vision),
-                "runtime_part_N3_s": float(runs["3"]["runtime_s"]),
-                "runtime_part_N4_s": float(runs["4"]["runtime_s"]),
+                "runtime_part_N3_s": float(runs["N=3_uniform"]["runtime_s"]),
+                "runtime_part_N4_s": float(runs["N=4_uniform"]["runtime_s"]),
             }
         )
 
