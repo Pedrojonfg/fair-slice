@@ -53,13 +53,14 @@ _EPS_FD_P_MIN = 0.5
 # Multi-start: Lloyd settles into a centroidal Voronoi (near-uniform cells),
 # which is a terrible local minimum when ingredients are concentrated.
 # We run several optimizations from different initializations and keep the best.
-_MULTI_START_RUNS = 3
+_MULTI_START_RUNS = 4
 
 # Regularization & convergence
 _REG_W = 1e-4                    # L2 on weights for numerical stability
 _REL_TOL = 1e-5                  # relative L change below this => early stop
 _BOUNDARY_PENALTY = 0.05         # soft projection strength
 _LLOYD_SHIFT_TOL = 0.5           # Lloyd early stop in pixels
+_RESEED_ALPHA_MOVE = 0.6         # active reseeding interpolation factor
 
 
 # ===========================================================================
@@ -219,9 +220,15 @@ def _solve_power_diagram(
     best_L = np.inf
     best_p = None
     best_w = None
+    init_strategies = _build_init_strategies(
+        coords_opt=coords_opt,
+        dens_opt=dens_opt,
+        total_dens_opt=total_dens_opt,
+        n_people=n_people,
+    )
     for run in range(_MULTI_START_RUNS):
         rng = np.random.default_rng(seed=42 + run * 97)
-        p_init = _kmeans_pp_init(coords_opt, total_dens_opt, n_people, rng)
+        p_init = init_strategies[run](rng)
 
         # Phase 1: Lloyd (geometric init, no preferences yet)
         p = _phase_lloyd(
@@ -248,6 +255,13 @@ def _solve_power_diagram(
         # Hungarian matching #2: re-match after weight optimization
         p, w = _match_persons_to_cells(
             coords_opt, dens_opt, p, w, targets_opt, alpha
+        )
+
+        # Active reseeding: kick a deficit cell towards where it needs mass.
+        p, w = _active_reseed(
+            coords_opt, dens_opt, p, w,
+            targets_opt, alpha,
+            domain_full=domain_full,
         )
 
         # Phase 3: joint refinement of (p, w)
@@ -327,6 +341,76 @@ def _match_persons_to_cells(
 
 
 # ---------------------------------------------------------------------------
+# Active reseeding (one-shot kick between weights and joint)
+# ---------------------------------------------------------------------------
+
+def _active_reseed(
+    coords: np.ndarray,
+    densities: np.ndarray,
+    p: np.ndarray,
+    w: np.ndarray,
+    targets: np.ndarray,         # (N, K)
+    alpha: np.ndarray,           # (K,)
+    domain_full: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    After optimizing weights with fixed positions, use the current integrals to
+    move the most-deficit generator towards the centroid of the ingredient it
+    lacks, within the cell that has the greatest excess of that ingredient.
+
+    This is a one-shot, problem-informed kick to escape local minima.
+    """
+    N = p.shape[0]
+    if N == 0:
+        return p, w
+
+    assignment = _assign(coords, p, w)
+    I = _compute_integrals(densities, assignment, N)              # (N, K)
+
+    # deficits/excesses (N, K)
+    excess = np.maximum(0.0, I - targets)
+    deficit = np.maximum(0.0, targets - I)
+
+    # imbalance per person: sum_j alpha[j] * deficit[i,j]^2
+    imbalance = (alpha[None, :] * (deficit ** 2)).sum(axis=1)     # (N,)
+    if float(imbalance.max()) <= 1e-18:
+        return p, w
+
+    i_poor = int(np.argmax(imbalance))
+
+    # ingredient most lacking for that person (weighted)
+    lack = alpha * deficit[i_poor]
+    j_star = int(np.argmax(lack))
+    if float(lack[j_star]) <= 1e-18:
+        return p, w
+
+    # cell richest in that ingredient
+    i_rich = int(np.argmax(excess[:, j_star]))
+    if i_rich == i_poor:
+        return p, w
+
+    sel_rich = assignment == i_rich
+    if not sel_rich.any():
+        return p, w
+
+    weights_rich = densities[sel_rich, j_star]
+    wsum = float(weights_rich.sum())
+    if wsum <= 1e-12:
+        return p, w
+
+    pixels_rich = coords[sel_rich]
+    centroid_target = (pixels_rich * weights_rich[:, None]).sum(axis=0) / wsum
+
+    p_new = p.copy()
+    p_new[i_poor] = (1.0 - _RESEED_ALPHA_MOVE) * p[i_poor] + _RESEED_ALPHA_MOVE * centroid_target
+    p_new = _hard_project_to_domain(p_new, domain_full)
+
+    w_new = w.copy()
+    w_new[i_poor] = 0.0
+    return p_new, w_new
+
+
+# ---------------------------------------------------------------------------
 # Domain extraction & subsampling
 # ---------------------------------------------------------------------------
 
@@ -374,6 +458,155 @@ def _build_optimization_grid(
 # ---------------------------------------------------------------------------
 # k-means++ initialization
 # ---------------------------------------------------------------------------
+
+def _build_init_strategies(
+    coords_opt: np.ndarray,
+    dens_opt: np.ndarray,
+    total_dens_opt: np.ndarray,
+    n_people: int,
+) -> list:
+    """
+    Multi-start initializations designed to be structurally diverse.
+
+    Returns a list of callables: init(rng) -> p_init (N, 2).
+    The first four are:
+      A) k-means++ weighted by total density (baseline)
+      B) k-means++ weighted by the most concentrated ingredient channel
+      C) stripe initialization along the dominant spatial axis
+      D) random uniform sampling from the domain
+    """
+    A = lambda rng: _kmeans_pp_init(coords_opt, total_dens_opt, n_people, rng)
+
+    j_star = _most_concentrated_channel(dens_opt)
+    if j_star is None:
+        B = A
+        stripe_axis = None
+    else:
+        B = lambda rng: _kmeans_pp_init(coords_opt, dens_opt[:, j_star], n_people, rng)
+        stripe_axis = _dominant_axis_for_channel(coords_opt, dens_opt[:, j_star])
+
+    C = lambda rng: _stripe_init(
+        coords_opt, total_dens_opt, n_people, rng,
+        axis=stripe_axis,
+    )
+    D = lambda rng: _random_uniform_init(coords_opt, n_people, rng)
+    return [A, B, C, D]
+
+
+def _most_concentrated_channel(dens_opt: np.ndarray) -> int | None:
+    """
+    Pick the ingredient channel whose mass is most spatially concentrated.
+
+    Heuristic: maximize (std / mean) over domain points.
+    This is less sensitive to single-pixel outliers than max/mean and matches
+    the "spatial concentration normalized by volume" intuition.
+    Returns None if all channels are (near-)zero.
+    """
+    if dens_opt.ndim != 2 or dens_opt.shape[1] == 0:
+        return None
+    K = dens_opt.shape[1]
+    scores = np.full(K, -np.inf, dtype=np.float64)
+    for j in range(K):
+        col = dens_opt[:, j]
+        m = float(col.mean())
+        if m <= 1e-12:
+            continue
+        scores[j] = float(col.std()) / (m + 1e-12)
+    j_star = int(np.argmax(scores))
+    if not np.isfinite(scores[j_star]):
+        return None
+    return j_star
+
+
+def _dominant_axis_for_channel(
+    coords: np.ndarray,
+    channel_density: np.ndarray,
+) -> int:
+    """
+    Choose which axis the *distribution* varies most along for a given channel.
+
+    Returns 0 for y-dominant variation, 1 for x-dominant variation.
+    We measure weighted spatial variance of coords along each axis.
+    """
+    w = np.asarray(channel_density, dtype=np.float64).clip(min=0)
+    w_sum = float(w.sum())
+    if w_sum <= 1e-12:
+        # Fallback: unweighted variance
+        vy = float(np.var(coords[:, 0]))
+        vx = float(np.var(coords[:, 1]))
+        return 0 if vy >= vx else 1
+
+    my = float((coords[:, 0] * w).sum() / w_sum)
+    mx = float((coords[:, 1] * w).sum() / w_sum)
+    vy = float(((coords[:, 0] - my) ** 2 * w).sum() / w_sum)
+    vx = float(((coords[:, 1] - mx) ** 2 * w).sum() / w_sum)
+    return 0 if vy >= vx else 1
+
+
+def _stripe_init(
+    coords: np.ndarray,
+    weights: np.ndarray,
+    k: int,
+    rng: np.random.Generator,
+    axis: int | None = None,
+) -> np.ndarray:
+    """
+    Seeds aligned along stripes on the dominant spatial axis (x or y).
+    Good when the main asymmetry is roughly 1D.
+    """
+    if axis is None:
+        # Fallback when we don't have a meaningful "most concentrated" channel.
+        # Use total domain spread as a weak proxy.
+        y_min, x_min = coords.min(axis=0)
+        y_max, x_max = coords.max(axis=0)
+        y_range = float(y_max - y_min)
+        x_range = float(x_max - x_min)
+        axis = 0 if y_range >= x_range else 1
+
+    w = np.asarray(weights, dtype=np.float64).clip(min=0)
+    w_sum = float(w.sum())
+    if w_sum <= 1e-12:
+        w = np.ones(len(coords), dtype=np.float64)
+        w_sum = float(len(coords))
+
+    other_axis = 1 - axis
+    other_center = float((coords[:, other_axis] * w).sum() / w_sum)
+
+    # Evenly spaced stripe positions across the domain bounding box.
+    lo = float(coords[:, axis].min())
+    hi = float(coords[:, axis].max())
+    if k == 1:
+        stripe_pos = np.array([(lo + hi) * 0.5], dtype=np.float64)
+    else:
+        stripe_pos = np.linspace(lo, hi, k, dtype=np.float64)
+
+    # Small jitter to avoid identical outcomes under Lloyd.
+    jitter_scale = 0.15 * (hi - lo) / max(k, 2)
+    stripe_pos = stripe_pos + rng.normal(0.0, jitter_scale, size=k)
+
+    p = np.empty((k, 2), dtype=np.float64)
+    for i in range(k):
+        if axis == 0:
+            cand = np.array([stripe_pos[i], other_center], dtype=np.float64)
+        else:
+            cand = np.array([other_center, stripe_pos[i]], dtype=np.float64)
+        # Snap candidate to nearest admissible point in the optimization grid.
+        d2 = ((coords - cand[None, :]) ** 2).sum(axis=1)
+        p[i] = coords[int(np.argmin(d2))]
+    return p
+
+
+def _random_uniform_init(
+    coords: np.ndarray,
+    k: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Uniformly sample k seeds from the domain points."""
+    M = coords.shape[0]
+    replace = M < k
+    idx = rng.choice(M, size=k, replace=replace)
+    return coords[idx].astype(np.float64, copy=True)
+
 
 def _kmeans_pp_init(
     coords: np.ndarray,
