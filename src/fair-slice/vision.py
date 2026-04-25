@@ -334,14 +334,19 @@ No markdown, no explanation, just the JSON."""
                 "Gemini devolvió un polígono que cubre prácticamente toda la imagen "
                 "(no pudo trazar el borde real del plato/pizza)."
             )
+        if mask.sum() < 0.05 * H * W:
+            raise ValueError(f"Polygon too small: {mask.sum()} pixels")
         print(
             f"[vision] Gemini polygon mask: {len(pts)} points, "
             f"coverage={coverage:.3f}"
         )
         return mask.astype(bool)
     except Exception as e:
-        print(f"[vision] Gemini dish detection failed ({e}), using full image")
-        return np.ones((H, W), dtype=bool)
+        print(f"[vision] Gemini dish detection failed ({e})")
+        print("[vision] Fallback: using center ellipse")
+        mask = np.zeros((H, W), dtype=np.uint8)
+        cv2.ellipse(mask, (W // 2, H // 2), (int(W * 0.42), int(H * 0.42)), 0, 0, 360, 1, -1)
+        return mask.astype(bool)
 
 
 # ---------------------------------------------------------------------------
