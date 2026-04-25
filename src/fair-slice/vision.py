@@ -308,7 +308,7 @@ def _detect_dish_mask(img_bgr: np.ndarray, model, image_path: str) -> np.ndarray
     prompt = """Look at this image. Find the dish, pizza, or food item.
 Return ONLY a JSON object with a polygon that traces the boundary of the dish:
 {"points": [[x1_frac, y1_frac], [x2_frac, y2_frac], ...]}
-Use 20 to 32 points, evenly spaced around the boundary. All values are fractions of image width (x) or height (y), between 0 and 1.
+Use 20 to 50 points, evenly spaced around the boundary. All values are fractions of image width (x) or height (y), between 0 and 1.
 Trace the actual boundary of the food, not a bounding box.
 Make sure the polygon includes the outer edge/border (e.g., pizza crust), not just the interior.
 No markdown, no explanation, just the JSON."""
@@ -328,16 +328,20 @@ No markdown, no explanation, just the JSON."""
         )
         mask = np.zeros((H, W), dtype=np.uint8)
         cv2.fillPoly(mask, [pts], 1)
+        coverage = float(mask.sum()) / float(H * W)
+        if len(pts) >= 50 and coverage > 0.95:
+            raise ValueError(
+                "Gemini devolvió un polígono que cubre prácticamente toda la imagen "
+                "(no pudo trazar el borde real del plato/pizza)."
+            )
         print(
             f"[vision] Gemini polygon mask: {len(pts)} points, "
-            f"coverage={mask.sum()/(H*W):.3f}"
+            f"coverage={coverage:.3f}"
         )
         return mask.astype(bool)
     except Exception as e:
-        raise ValueError(
-            "No se pudo detectar el borde del plato/pizza (polígono) con IA. "
-            "La imagen no es lo suficientemente buena; no se puede continuar."
-        ) from e
+        print(f"[vision] Gemini dish detection failed ({e}), using full image")
+        return np.ones((H, W), dtype=bool)
 
 
 # ---------------------------------------------------------------------------
