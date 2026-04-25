@@ -15,6 +15,7 @@ See README.md Section 3 for the full contract specification.
 
 from __future__ import annotations
 
+import math
 import numpy as np
 from scipy.ndimage import (
     label as cc_label,
@@ -299,6 +300,7 @@ def _solve_power_diagram(
             active_channels,
             ingredient_map,
             domain_full,
+            n_ingredients=int(active_channels.sum()) if active_channels is not None else K,
         )
         if temp_fairness >= _FAIRNESS_EARLY_EXIT:
             break
@@ -332,7 +334,14 @@ def _solve_power_diagram(
     masks = _build_masks(coords_full, assignment_full, n_people, H, W)
     masks = _enforce_connectivity(masks, domain_full)
     scores = _compute_scores(masks, ingredient_map)
-    fairness = _compute_fairness(scores, P_norm, active_channels, ingredient_map, domain_full)
+    fairness = _compute_fairness(
+        scores,
+        P_norm,
+        active_channels,
+        ingredient_map,
+        domain_full,
+        n_ingredients=int(active_channels.sum()) if active_channels is not None else K,
+    )
 
     return {
         "masks": masks,
@@ -1067,6 +1076,7 @@ def _compute_fairness(
     active_channels: np.ndarray | None = None,  # (K,) bool
     ingredient_map: np.ndarray | None = None,   # (H, W, K) float32
     dish_mask: np.ndarray | None = None,        # (H, W) bool
+    n_ingredients: int | None = None,           # complexity adjustment
 ) -> float:
     """
     Fairness metric for a partition.
@@ -1136,19 +1146,35 @@ def _compute_fairness(
             active_idx = np.where(active)[0]
             for j in active_idx:
                 presence_j = imap[:, :, j] > 0.05
-                f_j = float(presence_j[dmask].sum()) / dish_area
-                min_dev_j = max(0.0, ideal - f_j)
+                dish_area_i = float(dish_area)
+                # Fracción del plato con presencia del ingrediente j
+                f_j = float(presence_j.sum()) / float(dish_area_i)
 
-                actual_dev_j = float(np.abs(s[:, j] - ideal).max())
-                achievable_dev_j = max(0.0, actual_dev_j - min_dev_j)
-                worst_possible_j = max(ideal - min_dev_j, 1e-9)
+                # Concentración: cuánto del ingrediente está fuera del alcance de N celdas iguales.
+                # Si f_j < 1/N, al menos una celda no puede tener acceso → min_dev proporcional al déficit
+                # Si f_j >= 1/N, geométricamente es posible repartir bien → min_dev = 0
+                # Esto escala la desviación inevitable al rango [0, 1] relativo a la concentración,
+                # no al ideal absoluto, eliminando la dependencia espuria de N.
+                if f_j >= ideal:
+                    min_dev_j = 0.0
+                else:
+                    # Desviación inevitable normalizada por el rango posible de desviación
+                    min_dev_j = (ideal - f_j) / (1.0 - f_j + 1e-9)
+                    min_dev_j = float(np.clip(min_dev_j, 0.0, 1.0 - ideal))
 
-                rel_fairness_j = 1.0 - achievable_dev_j / worst_possible_j
-                rel_fairness_j = float(np.clip(rel_fairness_j, 0.0, 1.0))
+                # Desviación sobre el mínimo inevitable, normalizada por el máximo posible sobre ese mínimo
+                actual_dev_j = float(np.max(np.abs(scores[:, j] - ideal)))
+                achievable_dev_j = max(0.0, actual_dev_j - min_dev_j * ideal)
+                worst_possible_j = max(ideal - min_dev_j * ideal, 1e-9)
+                rel_fairness_j = float(np.clip(1.0 - achievable_dev_j / worst_possible_j, 0.0, 1.0))
                 rel_fairness_vals.append(rel_fairness_j)
 
             rel_fairness_arr = np.asarray(rel_fairness_vals, dtype=np.float64)
-            return float(np.clip(np.sum(rel_fairness_arr * weights), 0.0, 1.0))
+            raw_fairness = float(np.clip(np.sum(rel_fairness_arr * weights), 0.0, 1.0))
+            if n_ingredients is not None and n_ingredients >= 2:
+                complexity_factor = 1.0 / math.log2(n_ingredients + 1)
+                raw_fairness = float(np.clip(1.0 - (1.0 - raw_fairness) * complexity_factor, 0.0, 1.0))
+            return raw_fairness
 
     # Original metric (preference-aware, worst-case normalized deviation)
     P = P_norm.astype(np.float64)
@@ -1158,7 +1184,11 @@ def _compute_fairness(
     worst = np.maximum(P0, 1.0 - P0)
     worst = np.where(worst > 1e-12, worst, 1.0)
     norm_dev = dev / worst
-    return float(np.clip(1.0 - norm_dev.max(), 0.0, 1.0))
+    raw_fairness = float(np.clip(1.0 - norm_dev.max(), 0.0, 1.0))
+    if n_ingredients is not None and n_ingredients >= 2:
+        complexity_factor = 1.0 / math.log2(n_ingredients + 1)
+        raw_fairness = float(np.clip(1.0 - (1.0 - raw_fairness) * complexity_factor, 0.0, 1.0))
+    return raw_fairness
 
 
 # ===========================================================================
@@ -1253,7 +1283,14 @@ def _solve_radial(
     seeds = np.stack([raw_seeds[col_ind[i]] for i in range(n_people)])
 
     scores = _compute_scores(masks, ingredient_map)
-    fairness = _compute_fairness(scores, P_norm, active_channels, ingredient_map, domain)
+    fairness = _compute_fairness(
+        scores,
+        P_norm,
+        active_channels,
+        ingredient_map,
+        domain,
+        n_ingredients=int(active_channels.sum()) if active_channels is not None else K,
+    )
 
     return {
         "masks": masks,

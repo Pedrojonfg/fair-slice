@@ -117,7 +117,11 @@ def test_real_images_pipeline_smoke():
             fairness_relative = float(r["fairness"])
             scores = np.asarray(r["scores"], dtype=float)
             P_norm = np.full((N, K), 1.0 / float(N), dtype=np.float64)
+            n_ing = int(active_channels.sum()) if bool(active_channels.any()) else int(K)
             fairness = float(partition_mod._compute_fairness(scores, P_norm, active_channels))
+            fairness_complexity_adjusted = float(
+                partition_mod._compute_fairness(scores, P_norm, active_channels, n_ingredients=n_ing)
+            )
             fairness_relative_active = float(
                 partition_mod._compute_fairness(scores, P_norm, active_channels, imap, dish_mask)
             )
@@ -128,7 +132,8 @@ def test_real_images_pipeline_smoke():
             fairness_flag = " [LOW FAIRNESS]" if fairness_relative < 0.6 else ""
             print(
                 f"\ncompute_partition N={N} (free): runtime={t_part:.3f}s, "
-                f"fairness={fairness:.3f}, fairness_relative={fairness_relative:.3f}, "
+                f"fairness={fairness:.3f}, fairness_complexity_adjusted={fairness_complexity_adjusted:.3f}, "
+                f"fairness_relative={fairness_relative:.3f}, "
                 f"fairness_relative_active={fairness_relative_active:.3f}{fairness_flag}"
             )
 
@@ -175,6 +180,7 @@ def test_real_images_pipeline_smoke():
                 "N": N,
                 "runtime_s": t_part,
                 "fairness": fairness,
+                "fairness_complexity_adjusted": fairness_complexity_adjusted,
                 "fairness_relative": fairness_relative,
                 "fairness_relative_active": fairness_relative_active,
                 "scores": scores.tolist(),
@@ -207,6 +213,8 @@ def test_real_images_pipeline_smoke():
                 "K": K,
                 "fairness_N3": float(runs["3"]["fairness"]),
                 "fairness_N4": float(runs["4"]["fairness"]),
+                "fairness_N3_complexity_adjusted": float(runs["3"]["fairness_complexity_adjusted"]),
+                "fairness_N4_complexity_adjusted": float(runs["4"]["fairness_complexity_adjusted"]),
                 "fairness_N3_relative": float(runs["3"]["fairness_relative"]),
                 "fairness_N4_relative": float(runs["4"]["fairness_relative"]),
                 "fairness_N3_relative_active": float(runs["3"]["fairness_relative_active"]),
@@ -228,6 +236,8 @@ def test_real_images_pipeline_smoke():
         ("K", 3),
         ("N=3 fairness", 12),
         ("N=4 fairness", 12),
+        ("N=3 fair adj", 12),
+        ("N=4 fair adj", 12),
         ("N=3 fair rel", 12),
         ("N=4 fair rel", 12),
         ("N=3 rel act", 12),
@@ -246,6 +256,8 @@ def test_real_images_pipeline_smoke():
                 f"{s['K']:<3}",
                 f"{s['fairness_N3']:<12.3f}",
                 f"{s['fairness_N4']:<12.3f}",
+                f"{s['fairness_N3_complexity_adjusted']:<12.3f}",
+                f"{s['fairness_N4_complexity_adjusted']:<12.3f}",
                 f"{s['fairness_N3_relative']:<12.3f}",
                 f"{s['fairness_N4_relative']:<12.3f}",
                 f"{s['fairness_N3_relative_active']:<12.3f}",
@@ -259,6 +271,8 @@ def test_real_images_pipeline_smoke():
 
     fairness_mean_n3 = float(np.mean([s["fairness_N3"] for s in summary_rows])) if summary_rows else float("nan")
     fairness_mean_n4 = float(np.mean([s["fairness_N4"] for s in summary_rows])) if summary_rows else float("nan")
+    fairness_mean_n3_complexity_adjusted = float(np.mean([s["fairness_N3_complexity_adjusted"] for s in summary_rows])) if summary_rows else float("nan")
+    fairness_mean_n4_complexity_adjusted = float(np.mean([s["fairness_N4_complexity_adjusted"] for s in summary_rows])) if summary_rows else float("nan")
     fairness_mean_n3_relative = float(np.mean([s["fairness_N3_relative"] for s in summary_rows])) if summary_rows else float("nan")
     fairness_mean_n4_relative = float(np.mean([s["fairness_N4_relative"] for s in summary_rows])) if summary_rows else float("nan")
     fairness_mean_n3_relative_active = float(np.mean([s["fairness_N3_relative_active"] for s in summary_rows])) if summary_rows else float("nan")
@@ -275,6 +289,7 @@ def test_real_images_pipeline_smoke():
 
     print(
         f"\nFairness mean: N=3 -> {fairness_mean_n3:.3f}, N=4 -> {fairness_mean_n4:.3f} | "
+        f"fairness_mean_complexity_adjusted: N=3 -> {fairness_mean_n3_complexity_adjusted:.3f}, N=4 -> {fairness_mean_n4_complexity_adjusted:.3f} | "
         f"fairness_relative: N=3 -> {fairness_mean_n3_relative:.3f}, N=4 -> {fairness_mean_n4_relative:.3f} | "
         f"fairness_relative_active: N=3 -> {fairness_mean_n3_relative_active:.3f}, N=4 -> {fairness_mean_n4_relative_active:.3f}"
     )
@@ -298,6 +313,7 @@ def test_real_images_pipeline_smoke():
         "aggregate": {
             "table": summary_rows,
             "fairness_mean": {"N=3": fairness_mean_n3, "N=4": fairness_mean_n4},
+            "fairness_mean_complexity_adjusted": {"N=3": fairness_mean_n3_complexity_adjusted, "N=4": fairness_mean_n4_complexity_adjusted},
             "fairness_mean_relative": {"N=3": fairness_mean_n3_relative, "N=4": fairness_mean_n4_relative},
             "fairness_mean_relative_active": {"N=3": fairness_mean_n3_relative_active, "N=4": fairness_mean_n4_relative_active},
             "runtime_mean_s": {

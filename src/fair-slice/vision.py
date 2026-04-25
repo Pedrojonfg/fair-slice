@@ -583,6 +583,8 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
             name = ingredient_labels.get(k, f"channel_{k}")
             print(f"[vision] Canal {k} ({name}): cobertura={coverage:.1%}, media={mean_val:.3f}")
 
+    # Base ingredient is cumulative over the whole dish (before normalization).
+    ingredient_map[:, :, 0][dish_mask] = 1.0
     ingredient_map = _normalize_map(ingredient_map, dish_mask)
 
     # ------------------------------------------------------------------
