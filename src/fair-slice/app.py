@@ -122,6 +122,8 @@ def _screen_result() -> None:
 
     col1, col2 = st.columns([1, 1])
     with col1:
+        dish_mask = st.session_state["ingredient_map"].sum(axis=-1) > 1e-3
+        result["masks"] = [m & dish_mask for m in result["masks"]]
         overlay = render_overlay(image_path, masks, n_people)
         st.image(overlay, caption="Proposed split", use_container_width=True)
 

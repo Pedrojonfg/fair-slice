@@ -53,33 +53,32 @@ def _call_gemini_combined(client: genai.Client, image_path: str, H: int, W: int)
     """
     image = Image.open(image_path)
 
-    prompt = """You will analyze a photo of a dish (pizza, cake, etc.) and return TWO things in a single JSON object.
+    prompt = """You are analyzing a food photo. Your task is to identify the dish boundary with PRECISION.
 
-PART 1 — Identify every distinct ingredient/component visible:
-- The base (dough, bread, rice, pastry…) MUST be FIRST
-- Sauces, toppings, vegetables, meats, cheeses
-- Group similar things together (e.g., all cheeses → "mozzarella")
-- Return between 2 and 8 ingredients
-- For each, describe color/appearance for OpenCV detection
+CRITICAL RULES for the polygon:
+- Trace ONLY the outer edge of the food itself (pizza, cake, plate of food)
+- Do NOT include the table, background, cutting board, napkins, or anything that is not food
+- The polygon must fit INSIDE the food boundary, not outside it
+- If unsure, trace slightly smaller rather than larger
+- Use 30 points evenly spaced around the food edge
+- Coordinates are fractions: x = column/image_width, y = row/image_height, both in [0,1]
 
-PART 2 — Trace the boundary of the dish:
-- Return a polygon with 24-40 points evenly spaced around the OUTER edge of the food
-- Include the crust/border, NOT just the interior
-- Coordinates are FRACTIONS of image dimensions: x in [0,1] of width, y in [0,1] of height
-- The polygon must trace the ACTUAL dish, not a bounding box
-- Be precise — follow the curvature of the pizza/plate edge
+Also identify the ingredients visible in the dish.
 
-Return ONLY this JSON, no markdown, no extra text:
+Return ONLY this JSON (no markdown, no explanation):
 {
   "ingredients": [
-    {"name": "dough", "color_description": "pale yellow-beige base"},
+    {"name": "dough", "color_description": "pale yellow-beige base covering entire pizza"},
     {"name": "tomato_sauce", "color_description": "bright red glossy patches"}
   ],
-  "polygon": [[0.5, 0.1], [0.6, 0.12], [0.7, 0.18], ...]
-}"""
+  "polygon": [[0.45, 0.08], [0.55, 0.09], ...]
+}
+
+The BASE ingredient (dough/bread/rice) MUST be first in the ingredients list.
+Return 2-8 ingredients total."""
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-2.5-pro",
         contents=[image, prompt],
     )
     raw = response.text.strip()
@@ -108,7 +107,7 @@ Return ONLY this JSON, no markdown, no extra text:
     # Validation: polygon must cover a reasonable area
     if coverage < 0.10:
         raise ValueError(f"Polygon too small (coverage={coverage:.2%})")
-    if coverage > 0.92:
+    if coverage > 0.75:
         raise ValueError(f"Polygon covers almost full image (coverage={coverage:.2%}) — likely wrong")
 
     # Smooth the mask edges with a small morphological close to eliminate jaggedness
