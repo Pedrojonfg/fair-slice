@@ -239,6 +239,7 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
 
     # Dibujar números centrados en cada región
     draw = ImageDraw.Draw(result)
+    font = _load_font(56)
     for i, mask in enumerate(masks[:n_people]):
         m = np.asarray(mask, dtype=bool)
         ys, xs = np.where(m)
@@ -246,7 +247,7 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
             continue
         cy, cx = int(ys.mean()), int(xs.mean())
         text = str(i + 1)
-        draw.text((cx, cy), text, fill=(255, 255, 255, 255), anchor="mm")
+        draw.text((cx, cy), text, fill=(255, 255, 255, 255), anchor="mm", font=font)
 
     return result.convert("RGB")
 

@@ -62,6 +62,7 @@ CRITICAL RULES for the polygon:
 - If unsure, trace slightly smaller rather than larger
 - Use 30 points evenly spaced around the food edge
 - Coordinates are fractions: x = column/image_width, y = row/image_height, both in [0,1]
+- If the image has a clean/white background with the food on top, use that strong contrast to trace the true food edge precisely (including the crust/border)
 
 Also identify the ingredients visible in the dish.
 
