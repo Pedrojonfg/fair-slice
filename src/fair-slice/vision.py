@@ -12,10 +12,11 @@ See README.md Section 2 for the full contract specification.
 
 import json
 import os
+from pathlib import Path
 
 import cv2
 import numpy as np
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 from PIL import Image
 
@@ -39,16 +40,16 @@ PERSPECTIVE_ABORT_THRESHOLD       = 0.40  # below → raise, result would be unr
 # Vertex AI / Gemini helpers
 # ---------------------------------------------------------------------------
 
-def _init_model() -> genai.GenerativeModel:
-    load_dotenv()
+def _init_model() -> genai.Client:
+    # Ensure we always load the repo-root .env, regardless of current working directory.
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=True)
     api_key = os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
         raise EnvironmentError("GOOGLE_AI_API_KEY not set in .env")
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel("gemini-2.0-flash")
+    return genai.Client(api_key=api_key)
 
 
-def _call_gemini(model: genai.GenerativeModel, image_path: str) -> list[dict]:
+def _call_gemini(client: genai.Client, image_path: str) -> list[dict]:
     """
     Ask Gemini to identify every ingredient in the dish photo.
 
@@ -84,7 +85,10 @@ Example format:
   {"name": "pepperoni",   "color_description": "dark reddish-brown small circles"}
 ]"""
 
-    response = model.generate_content([image, prompt])
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[image, prompt],
+    )
     raw = response.text.strip()
 
     # Strip accidental markdown fences if Gemini adds them
@@ -537,8 +541,8 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     # ------------------------------------------------------------------
     # 5. Ask Gemini what ingredients are in the dish
     # ------------------------------------------------------------------
-    model = _init_model()
-    ingredients = _call_gemini(model, image_path)  # list[dict]
+    client = _init_model()
+    ingredients = _call_gemini(client, image_path)  # list[dict]
 
     K = len(ingredients)
     ingredient_labels: dict[int, str] = {i: ing["name"] for i, ing in enumerate(ingredients)}
