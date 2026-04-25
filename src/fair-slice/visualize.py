@@ -239,27 +239,32 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
 
     W, H = base.size
 
-    label_map = np.full((H, W), -1, dtype=np.int16)
+    aligned_masks: list[np.ndarray] = []
     for i, mask in enumerate(masks[:n_people]):
         m = np.asarray(mask, dtype=bool)
         if m.shape != (H, W):
             pil_m = Image.fromarray((m.astype(np.uint8) * 255)).resize((W, H), Image.NEAREST)
             m = np.array(pil_m) > 127
-        label_map[m] = i
+        aligned_masks.append(m)
 
-    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    img = base
     for i in range(n_people):
-        r, g, b, a = PALETTE[i % len(PALETTE)]
-        region = np.zeros((H, W, 4), dtype=np.uint8)
-        region[label_map == i] = [r, g, b, a]
-        overlay = Image.alpha_composite(overlay, Image.fromarray(region))
+        if i >= len(aligned_masks):
+            break
+        color_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        draw_array = np.array(color_layer)
+        draw_array[aligned_masks[i]] = PALETTE[i % len(PALETTE)]  # solo píxeles de la máscara
+        color_layer = Image.fromarray(draw_array, "RGBA")
+        img = Image.alpha_composite(img.convert("RGBA"), color_layer)
 
-    out = Image.alpha_composite(base, overlay).convert("RGB")
+    out = img.convert("RGB")
     draw = ImageDraw.Draw(out)
     font = _load_font(40)
 
     for i in range(n_people):
-        ys, xs = np.where(label_map == i)
+        if i >= len(aligned_masks):
+            break
+        ys, xs = np.where(aligned_masks[i])
         if len(xs) == 0:
             continue
         cx, cy = int(xs.mean()), int(ys.mean())

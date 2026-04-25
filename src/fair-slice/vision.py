@@ -301,19 +301,39 @@ def correct_perspective(img_bgr: np.ndarray) -> np.ndarray:
 # Dish boundary detection
 # ---------------------------------------------------------------------------
 
-def _detect_dish_mask(img_bgr):
+def _detect_dish_mask(img_bgr: np.ndarray, model, image_path: str) -> np.ndarray:
     H, W = img_bgr.shape[:2]
-    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    sat = hsv[:, :, 1]
-    _, thresh = cv2.threshold(sat, 30, 255, cv2.THRESH_BINARY)
-    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
+
+    prompt = """Look at this image. Find the dish, pizza, or food item.
+Return ONLY a JSON object with a polygon that traces the boundary of the dish:
+{"points": [[x1_frac, y1_frac], [x2_frac, y2_frac], ...]}
+Use 8 to 16 points. All values are fractions of image width (x) or height (y), between 0 and 1.
+Trace the actual boundary of the food, not a bounding box.
+No markdown, no explanation, just the JSON."""
+
+    try:
+        from PIL import Image as PILImage
+
+        pil_img = PILImage.open(image_path)
+        response = model.models.generate_content(model="gemini-2.5-flash", contents=[pil_img, prompt])
+        raw = response.text.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(raw)
+        points = data["points"]
+        # Convertir fracciones a píxeles
+        pts = np.array(
+            [[int(p[0] * W), int(p[1] * H)] for p in points],
+            dtype=np.int32,
+        )
+        mask = np.zeros((H, W), dtype=np.uint8)
+        cv2.fillPoly(mask, [pts], 1)
+        print(
+            f"[vision] Gemini polygon mask: {len(pts)} points, "
+            f"coverage={mask.sum()/(H*W):.3f}"
+        )
+        return mask.astype(bool)
+    except Exception as e:
+        print(f"[vision] Gemini dish detection failed ({e}), using full image")
         return np.ones((H, W), dtype=bool)
-    largest = max(contours, key=cv2.contourArea)
-    mask = np.zeros((H, W), dtype=bool)
-    cv2.drawContours(mask.view(np.uint8), [largest], -1, 1, thickness=-1)
-    return mask
 
 
 # ---------------------------------------------------------------------------
@@ -511,16 +531,17 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     img_bgr = correct_perspective(img_bgr)
     H, W = img_bgr.shape[:2]   # dimensions may have changed after correction
 
+    model = _init_model()
+
     # ------------------------------------------------------------------
     # 4. Detect dish boundary
     # ------------------------------------------------------------------
-    dish_mask = _detect_dish_mask(img_bgr)   # bool (H, W)
+    dish_mask = _detect_dish_mask(img_bgr, model, image_path)   # bool (H, W)
 
     # ------------------------------------------------------------------
     # 5. Ask Gemini what ingredients are in the dish
     # ------------------------------------------------------------------
-    client = _init_model()
-    ingredients = _call_gemini(client, image_path)  # list[dict]
+    ingredients = _call_gemini(model, image_path)  # list[dict]
 
     K = len(ingredients)
     ingredient_labels: dict[int, str] = {i: ing["name"] for i, ing in enumerate(ingredients)}
