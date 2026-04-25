@@ -221,7 +221,7 @@ def render_partition(
 def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> Image.Image:
     base = Image.open(image_path).convert("RGBA")
     # Resize to match mask dimensions
-    H, W = masks[0].shape
+    H, W = np.asarray(masks[0]).shape
     base = base.resize((W, H), Image.LANCZOS)
 
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -229,7 +229,10 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
 
     for i, mask in enumerate(masks[:n_people]):
         color = PALETTE[i % len(PALETTE)]
-        overlay_arr[mask] = color  # solo píxeles donde mask es True
+        m = np.asarray(mask, dtype=bool)
+        if m.shape != (H, W):
+            raise ValueError(f"Mask shape {m.shape} does not match expected {(H, W)}")
+        overlay_arr[m] = color  # solo píxeles donde mask es True
 
     overlay = Image.fromarray(overlay_arr, "RGBA")
     result = Image.alpha_composite(base, overlay)
@@ -237,7 +240,8 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
     # Dibujar números centrados en cada región
     draw = ImageDraw.Draw(result)
     for i, mask in enumerate(masks[:n_people]):
-        ys, xs = np.where(mask)
+        m = np.asarray(mask, dtype=bool)
+        ys, xs = np.where(m)
         if len(ys) == 0:
             continue
         cy, cx = int(ys.mean()), int(xs.mean())
