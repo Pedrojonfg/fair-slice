@@ -1,0 +1,38 @@
+import time
+
+import numpy as np
+import pytest
+
+from partition import compute_partition
+from tests.fixtures import (
+    fixture_pizza_uniform,
+    fixture_large_realistic,
+)
+
+
+def _time_call(fn, *args, **kwargs) -> float:
+    t0 = time.perf_counter()
+    fn(*args, **kwargs)
+    return time.perf_counter() - t0
+
+
+@pytest.mark.slow
+def test_e1_128x128_k4_under_15s():
+    imap = fixture_pizza_uniform()
+    dt = _time_call(compute_partition, imap, 4, mode="free")
+    assert dt < 15.0
+
+
+@pytest.mark.slow
+def test_e3_500x500_k5_under_60s():
+    imap = fixture_large_realistic()
+    dt = _time_call(compute_partition, imap, 4, mode="free")
+    assert dt < 60.0
+
+
+@pytest.mark.slow
+def test_e5_radial_500x500_under_1s():
+    imap = fixture_large_realistic()
+    dt = _time_call(compute_partition, imap, 4, mode="radial")
+    assert dt < 1.0
+
