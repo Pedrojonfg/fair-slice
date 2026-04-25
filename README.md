@@ -2,7 +2,7 @@
 
 **FairSlice** is a web service that, from a photo of a dish (pizza, cake, paella...), tries to **identify ingredients** and calculate a **"fair" partition** for \(N\) people. It returns an image with colored areas (what each person gets) and distribution metrics.
 
-The repo is prepared to run as a **FastAPI API** and serve a **static UI** (PWA) from `app/static/`.
+The repo can run as a **Streamlit app** (fast local UI) and as a **FastAPI API** (backend service).
 
 ---
 
@@ -17,18 +17,36 @@ The repo is prepared to run as a **FastAPI API** and serve a **static UI** (PWA)
   - `partition.py`: partitioning algorithm (modes `free` and `radial`)
   - `visualize.py`: overlay render (PIL)
   - `main.py`: local pipeline runner
+- **Streamlit UI**: `src/fair-slice/app.py`
 
 ---
 
 ## Requirements
 
 - **Python 3.11+** (recommended)
-- **Google Cloud** credentials if you want to run `vision.segment_dish()` against Vertex AI
+- **Gemini API key** to run the vision pipeline (ingredient + dish boundary detection)
 - Python dependencies installed from `requirements.txt`
 
 ---
 
 ## Installation (local)
+
+### One command (recommended)
+
+```bash
+chmod +x ./run_local.sh
+./run_local.sh
+```
+
+This will create a venv in `.venv/`, install dependencies, and start the Streamlit UI at `http://localhost:8501`.
+
+To run the API instead:
+
+```bash
+APP_MODE=api ./run_local.sh
+```
+
+### Manual
 
 ```bash
 python -m venv .venv
@@ -38,24 +56,15 @@ pip install -r requirements.txt
 
 ---
 
-## Configuration (Vertex AI / Gemini)
+## Configuration (Gemini)
 
-The vision part needs these environment variables:
-
-- `GOOGLE_CLOUD_PROJECT` (**mandatory**)
-- `GOOGLE_CLOUD_LOCATION` (optional, default `us-central1`)
-
-Authentication (one of these options):
+Create a `.env` file at the repo root with:
 
 ```bash
-gcloud auth application-default login
+GOOGLE_AI_API_KEY=YOUR_KEY_HERE
 ```
 
-or:
-
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account.json"
-```
+`vision.py` loads this `.env` automatically.
 
 ---
 
