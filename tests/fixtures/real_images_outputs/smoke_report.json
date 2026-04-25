@@ -16,214 +16,276 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_3.jpg"
       },
       "vision": {
-        "runtime_s": 6.456051157998445,
+        "runtime_s": 7.083459146000678,
         "imap_shape": [
           500,
           500,
-          5
+          7
         ],
         "labels": {
-          "0": "pizza dough",
-          "1": "tomato sauce",
-          "2": "mozzarella cheese",
-          "3": "cherry tomatoes",
-          "4": "fresh basil leaves"
+          "0": "pizza_dough",
+          "1": "tomato_sauce",
+          "2": "mozzarella_cheese",
+          "3": "cherry_tomatoes",
+          "4": "cured_meat",
+          "5": "basil_leaves",
+          "6": "dark_green_herbs"
         }
       },
       "dish": {
-        "dish_pixels": 125500,
-        "dish_pixel_fraction": 0.502
+        "dish_pixels": 125629,
+        "dish_pixel_fraction": 0.502516
       },
       "channels": [
         {
           "k": 0,
-          "name": "pizza dough",
-          "coverage": 0.3542788844621514,
-          "mean": 0.2769666910171509,
+          "name": "pizza_dough",
+          "coverage": 0.3327973636660325,
+          "mean": 0.23423680663108826,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 1,
-          "name": "tomato sauce",
-          "coverage": 0.688199203187251,
-          "mean": 0.32828325033187866,
+          "name": "tomato_sauce",
+          "coverage": 0.6901113596383001,
+          "mean": 0.22299396991729736,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 2,
-          "name": "mozzarella cheese",
-          "coverage": 0.09462948207171315,
-          "mean": 0.03179362416267395,
+          "name": "mozzarella_cheese",
+          "coverage": 0.08498037873420945,
+          "mean": 0.021526528522372246,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 3,
-          "name": "cherry tomatoes",
-          "coverage": 0.688199203187251,
-          "mean": 0.32828325033187866,
+          "name": "cherry_tomatoes",
+          "coverage": 0.6901113596383001,
+          "mean": 0.22299396991729736,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 4,
-          "name": "fresh basil leaves",
-          "coverage": 0.04253386454183267,
-          "mean": 0.03467320650815964,
+          "name": "cured_meat",
+          "coverage": 0.12922175612318812,
+          "mean": 0.041520968079566956,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 5,
+          "name": "basil_leaves",
+          "coverage": 0.04156683568284393,
+          "mean": 0.033733781427145004,
           "low_coverage": true,
+          "active": true
+        },
+        {
+          "k": 6,
+          "name": "dark_green_herbs",
+          "coverage": 0.6901113596383001,
+          "mean": 0.22299396991729736,
+          "low_coverage": false,
           "active": true
         }
       ],
       "runs": {
         "3": {
           "N": 3,
-          "runtime_s": 11.312082120002742,
-          "fairness": 0.4760447144508362,
-          "fairness_active": 0.4760447144508362,
+          "runtime_s": 9.978186468000786,
+          "fairness": 0.5045473518548533,
+          "fairness_relative": 0.6524243710615232,
+          "fairness_relative_active": 0.6524243710615232,
           "scores": [
             [
-              0.44884371757507324,
-              0.3562561571598053,
-              0.2043716460466385,
-              0.3562561571598053,
-              0.25044968724250793
+              0.20720234513282776,
+              0.2200368195772171,
+              0.45607271790504456,
+              0.2200368195772171,
+              0.40281015634536743,
+              0.4328050911426544,
+              0.2200368195772171
             ],
             [
-              0.28244537115097046,
-              0.3860364258289337,
-              0.11299155652523041,
-              0.3860364258289337,
-              0.17314867675304413
+              0.35323116183280945,
+              0.4188566207885742,
+              0.1975884884595871,
+              0.4188566207885742,
+              0.27455171942710876,
+              0.5641623139381409,
+              0.4188566207885742
             ],
             [
-              0.2687106132507324,
-              0.2577076852321625,
-              0.6826368570327759,
-              0.2577076852321625,
-              0.5764012932777405
+              0.4395679235458374,
+              0.361026793718338,
+              0.34634149074554443,
+              0.361026793718338,
+              0.32263630628585815,
+              0.0030315679032355547,
+              0.361026793718338
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
-            "mozzarella cheese",
-            "cherry tomatoes",
-            "fresh basil leaves"
+            "pizza_dough",
+            "tomato_sauce",
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "cured_meat",
+            "basil_leaves",
+            "dark_green_herbs"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev": 0.11551038424173993,
+              "name": "pizza_dough",
+              "max_abs_dev": 0.12613098820050556,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev": 0.07562564810117084,
+              "name": "tomato_sauce",
+              "max_abs_dev": 0.11329651375611621,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "2": {
-              "name": "mozzarella cheese",
-              "max_abs_dev": 0.34930352369944256,
+              "name": "mozzarella_cheese",
+              "max_abs_dev": 0.13574484487374622,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "3": {
-              "name": "cherry tomatoes",
-              "max_abs_dev": 0.07562564810117084,
+              "name": "cherry_tomatoes",
+              "max_abs_dev": 0.11329651375611621,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "4": {
-              "name": "fresh basil leaves",
-              "max_abs_dev": 0.24306795994440716,
+              "name": "cured_meat",
+              "max_abs_dev": 0.06947682301203412,
+              "ideal": 0.3333333333333333,
+              "active": true
+            },
+            "5": {
+              "name": "basil_leaves",
+              "max_abs_dev": 0.33030176543009776,
+              "ideal": 0.3333333333333333,
+              "active": true
+            },
+            "6": {
+              "name": "dark_green_herbs",
+              "max_abs_dev": 0.11329651375611621,
               "ideal": 0.3333333333333333,
               "active": true
             }
           },
           "flags": {
-            "low_fairness": true
+            "low_fairness": false
           }
         },
         "4": {
           "N": 4,
-          "runtime_s": 18.56981354600066,
-          "fairness": 0.4817233085632324,
-          "fairness_active": 0.4817233085632324,
+          "runtime_s": 16.23946765800065,
+          "fairness": 0.6574118137359619,
+          "fairness_relative": 0.6892922039121555,
+          "fairness_relative_active": 0.6892922039121555,
           "scores": [
             [
-              0.29862505197525024,
-              0.19881774485111237,
-              0.10098929703235626,
-              0.19881774485111237,
-              0.3000377416610718
+              0.19405844807624817,
+              0.19787806272506714,
+              0.4142530560493469,
+              0.19787806272506714,
+              0.36285239458084106,
+              0.23110716044902802,
+              0.19787806272506714
             ],
             [
-              0.1667623668909073,
-              0.22551080584526062,
-              0.22400328516960144,
-              0.22551080584526062,
-              0.4781765639781952
+              0.27146580815315247,
+              0.3085740804672241,
+              0.31662338972091675,
+              0.3085740804672241,
+              0.26859918236732483,
+              0.0,
+              0.3085740804672241
             ],
             [
-              0.24939168989658356,
-              0.3414296805858612,
-              0.036300040781497955,
-              0.3414296805858612,
-              0.11235304921865463
+              0.24544182419776917,
+              0.17087440192699432,
+              0.09522047638893127,
+              0.17087440192699432,
+              0.11419372260570526,
+              0.2619512975215912,
+              0.17087440192699432
             ],
             [
-              0.28521978855133057,
-              0.23424099385738373,
-              0.6387075185775757,
-              0.23424099385738373,
-              0.10943221300840378
+              0.289031445980072,
+              0.32273879647254944,
+              0.1739046424627304,
+              0.32273879647254944,
+              0.2543531060218811,
+              0.5069411396980286,
+              0.32273879647254944
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
-            "mozzarella cheese",
-            "cherry tomatoes",
-            "fresh basil leaves"
+            "pizza_dough",
+            "tomato_sauce",
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "cured_meat",
+            "basil_leaves",
+            "dark_green_herbs"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev": 0.08323763310909271,
+              "name": "pizza_dough",
+              "max_abs_dev": 0.05594155192375183,
               "ideal": 0.25,
               "active": true
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev": 0.0914296805858612,
+              "name": "tomato_sauce",
+              "max_abs_dev": 0.07912559807300568,
               "ideal": 0.25,
               "active": true
             },
             "2": {
-              "name": "mozzarella cheese",
-              "max_abs_dev": 0.3887075185775757,
+              "name": "mozzarella_cheese",
+              "max_abs_dev": 0.16425305604934692,
               "ideal": 0.25,
               "active": true
             },
             "3": {
-              "name": "cherry tomatoes",
-              "max_abs_dev": 0.0914296805858612,
+              "name": "cherry_tomatoes",
+              "max_abs_dev": 0.07912559807300568,
               "ideal": 0.25,
               "active": true
             },
             "4": {
-              "name": "fresh basil leaves",
-              "max_abs_dev": 0.2281765639781952,
+              "name": "cured_meat",
+              "max_abs_dev": 0.13580627739429474,
+              "ideal": 0.25,
+              "active": true
+            },
+            "5": {
+              "name": "basil_leaves",
+              "max_abs_dev": 0.25694113969802856,
+              "ideal": 0.25,
+              "active": true
+            },
+            "6": {
+              "name": "dark_green_herbs",
+              "max_abs_dev": 0.07912559807300568,
               "ideal": 0.25,
               "active": true
             }
           },
           "flags": {
-            "low_fairness": true
+            "low_fairness": false
           }
         }
       }
@@ -234,18 +296,17 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_4.jpg"
       },
       "vision": {
-        "runtime_s": 6.65223994200278,
+        "runtime_s": 5.044897177001985,
         "imap_shape": [
           472,
           500,
-          5
+          4
         ],
         "labels": {
-          "0": "pizza_dough",
-          "1": "tomato_sauce",
-          "2": "cured_meats",
-          "3": "red_tomato_slices",
-          "4": "fresh_basil"
+          "0": "dough",
+          "1": "sausage_salami",
+          "2": "sliced_tomatoes",
+          "3": "basil_leaves"
         }
       },
       "dish": {
@@ -255,41 +316,33 @@
       "channels": [
         {
           "k": 0,
-          "name": "pizza_dough",
-          "coverage": 0.05158344666796192,
-          "mean": 0.04942838475108147,
+          "name": "dough",
+          "coverage": 0.06287643287351856,
+          "mean": 0.06000421568751335,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 1,
-          "name": "tomato_sauce",
-          "coverage": 0.9069725082572372,
-          "mean": 0.30063360929489136,
+          "name": "sausage_salami",
+          "coverage": 0.8965173887701574,
+          "mean": 0.44430604577064514,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 2,
-          "name": "cured_meats",
-          "coverage": 0.9069725082572372,
-          "mean": 0.30063360929489136,
+          "name": "sliced_tomatoes",
+          "coverage": 0.8965173887701574,
+          "mean": 0.44430604577064514,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 3,
-          "name": "red_tomato_slices",
-          "coverage": 0.9069725082572372,
-          "mean": 0.30063360929489136,
-          "low_coverage": false,
-          "active": true
-        },
-        {
-          "k": 4,
-          "name": "fresh_basil",
-          "coverage": 0.0652078880901496,
-          "mean": 0.0486706905066967,
+          "name": "basil_leaves",
+          "coverage": 0.0680736351272586,
+          "mean": 0.05138362571597099,
           "low_coverage": false,
           "active": true
         }
@@ -297,151 +350,132 @@
       "runs": {
         "3": {
           "N": 3,
-          "runtime_s": 7.2090201179998985,
-          "fairness": 0.42681580781936646,
-          "fairness_active": 0.42681580781936646,
+          "runtime_s": 6.197781344999385,
+          "fairness": 0.45594754815101624,
+          "fairness_relative": 0.8156063486129159,
+          "fairness_relative_active": 0.8156063486129159,
           "scores": [
             [
-              0.302939772605896,
-              0.3383048176765442,
-              0.3383048176765442,
-              0.3383048176765442,
-              0.2388189435005188
+              0.24611467123031616,
+              0.283439040184021,
+              0.283439040184021,
+              0.1479491889476776
             ],
             [
-              0.49521833658218384,
-              0.2887704074382782,
-              0.2887704074382782,
-              0.2887704074382782,
-              0.04572495445609093
+              0.558980405330658,
+              0.34372758865356445,
+              0.34372758865356445,
+              0.15601426362991333
             ],
             [
-              0.20184257626533508,
-              0.3730386197566986,
-              0.3730386197566986,
-              0.3730386197566986,
-              0.7154561281204224
+              0.1949048638343811,
+              0.37283340096473694,
+              0.37283340096473694,
+              0.6960349678993225
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
-            "tomato_sauce",
-            "cured_meats",
-            "red_tomato_slices",
-            "fresh_basil"
+            "dough",
+            "sausage_salami",
+            "sliced_tomatoes",
+            "basil_leaves"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev": 0.16188500324885052,
+              "name": "dough",
+              "max_abs_dev": 0.22564707199732464,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev": 0.04456292589505512,
+              "name": "sausage_salami",
+              "max_abs_dev": 0.04989429314931232,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "2": {
-              "name": "cured_meats",
-              "max_abs_dev": 0.04456292589505512,
+              "name": "sliced_tomatoes",
+              "max_abs_dev": 0.04989429314931232,
               "ideal": 0.3333333333333333,
               "active": true
             },
             "3": {
-              "name": "red_tomato_slices",
-              "max_abs_dev": 0.04456292589505512,
-              "ideal": 0.3333333333333333,
-              "active": true
-            },
-            "4": {
-              "name": "fresh_basil",
-              "max_abs_dev": 0.38212279478708905,
+              "name": "basil_leaves",
+              "max_abs_dev": 0.3627016345659892,
               "ideal": 0.3333333333333333,
               "active": true
             }
           },
           "flags": {
-            "low_fairness": true
+            "low_fairness": false
           }
         },
         "4": {
           "N": 4,
-          "runtime_s": 12.224291138001718,
-          "fairness": 0.4984046618143717,
-          "fairness_active": 0.4984046618143717,
+          "runtime_s": 8.384965273002308,
+          "fairness": 0.5000973542531331,
+          "fairness_relative": 0.6144948246094197,
+          "fairness_relative_active": 0.6144948246094197,
           "scores": [
             [
-              0.1946251094341278,
-              0.2676697373390198,
-              0.2676697373390198,
-              0.2676697373390198,
-              0.272697389125824
+              0.319090336561203,
+              0.2401067465543747,
+              0.2401067465543747,
+              0.24446311593055725
             ],
             [
-              0.23562997579574585,
-              0.2118549793958664,
-              0.2118549793958664,
-              0.2118549793958664,
-              0.08312273025512695
+              0.21259893476963043,
+              0.34131067991256714,
+              0.34131067991256714,
+              0.1306098848581314
             ],
             [
-              0.4747447371482849,
-              0.24637696146965027,
-              0.24637696146965027,
-              0.24637696146965027,
-              0.01798395998775959
+              0.3149167597293854,
+              0.1559990495443344,
+              0.1559990495443344,
+              0.0
             ],
             [
-              0.09500075876712799,
-              0.2741925120353699,
-              0.2741925120353699,
-              0.2741925120353699,
-              0.6261965036392212
+              0.15339308977127075,
+              0.2625839114189148,
+              0.2625839114189148,
+              0.6249269843101501
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
-            "tomato_sauce",
-            "cured_meats",
-            "red_tomato_slices",
-            "fresh_basil"
+            "dough",
+            "sausage_salami",
+            "sliced_tomatoes",
+            "basil_leaves"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev": 0.2247447371482849,
+              "name": "dough",
+              "max_abs_dev": 0.09660691022872925,
               "ideal": 0.25,
               "active": true
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev": 0.038145020604133606,
+              "name": "sausage_salami",
+              "max_abs_dev": 0.09400095045566559,
               "ideal": 0.25,
               "active": true
             },
             "2": {
-              "name": "cured_meats",
-              "max_abs_dev": 0.038145020604133606,
+              "name": "sliced_tomatoes",
+              "max_abs_dev": 0.09400095045566559,
               "ideal": 0.25,
               "active": true
             },
             "3": {
-              "name": "red_tomato_slices",
-              "max_abs_dev": 0.038145020604133606,
-              "ideal": 0.25,
-              "active": true
-            },
-            "4": {
-              "name": "fresh_basil",
-              "max_abs_dev": 0.3761965036392212,
+              "name": "basil_leaves",
+              "max_abs_dev": 0.37492698431015015,
               "ideal": 0.25,
               "active": true
             }
           },
           "flags": {
-            "low_fairness": true
+            "low_fairness": false
           }
         }
       }
@@ -452,7 +486,7 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_1.jpg"
       },
       "vision": {
-        "runtime_s": 3.76218660199811,
+        "runtime_s": 3.9577070600025763,
         "imap_shape": [
           500,
           440,
@@ -497,9 +531,10 @@
       "runs": {
         "3": {
           "N": 3,
-          "runtime_s": 6.838307408001128,
+          "runtime_s": 6.349543771000754,
           "fairness": 0.7758443653583527,
-          "fairness_active": 0.7758443653583527,
+          "fairness_relative": 0.6899697559883782,
+          "fairness_relative_active": 0.6899697559883782,
           "scores": [
             [
               0.3353131413459778,
@@ -548,9 +583,10 @@
         },
         "4": {
           "N": 4,
-          "runtime_s": 10.495169727000757,
+          "runtime_s": 9.902347191000445,
           "fairness": 0.7917138735453287,
-          "fairness_active": 0.7917138735453287,
+          "fairness_relative": 0.7225737167883235,
+          "fairness_relative_active": 0.7225737167883235,
           "scores": [
             [
               0.19090203940868378,
@@ -609,54 +645,64 @@
     "table": [
       {
         "image": "pizza_3.jpg",
-        "K": 5,
-        "fairness_N3": 0.4760447144508362,
-        "fairness_N4": 0.4817233085632324,
-        "fairness_N3_active": 0.4760447144508362,
-        "fairness_N4_active": 0.4817233085632324,
-        "runtime_vision_s": 6.456051157998445,
-        "runtime_part_N3_s": 11.312082120002742,
-        "runtime_part_N4_s": 18.56981354600066
+        "K": 7,
+        "fairness_N3": 0.5045473518548533,
+        "fairness_N4": 0.6574118137359619,
+        "fairness_N3_relative": 0.6524243710615232,
+        "fairness_N4_relative": 0.6892922039121555,
+        "fairness_N3_relative_active": 0.6524243710615232,
+        "fairness_N4_relative_active": 0.6892922039121555,
+        "runtime_vision_s": 7.083459146000678,
+        "runtime_part_N3_s": 9.978186468000786,
+        "runtime_part_N4_s": 16.23946765800065
       },
       {
         "image": "pizza_4.jpg",
-        "K": 5,
-        "fairness_N3": 0.42681580781936646,
-        "fairness_N4": 0.4984046618143717,
-        "fairness_N3_active": 0.42681580781936646,
-        "fairness_N4_active": 0.4984046618143717,
-        "runtime_vision_s": 6.65223994200278,
-        "runtime_part_N3_s": 7.2090201179998985,
-        "runtime_part_N4_s": 12.224291138001718
+        "K": 4,
+        "fairness_N3": 0.45594754815101624,
+        "fairness_N4": 0.5000973542531331,
+        "fairness_N3_relative": 0.8156063486129159,
+        "fairness_N4_relative": 0.6144948246094197,
+        "fairness_N3_relative_active": 0.8156063486129159,
+        "fairness_N4_relative_active": 0.6144948246094197,
+        "runtime_vision_s": 5.044897177001985,
+        "runtime_part_N3_s": 6.197781344999385,
+        "runtime_part_N4_s": 8.384965273002308
       },
       {
         "image": "pizza_1.jpg",
         "K": 3,
         "fairness_N3": 0.7758443653583527,
         "fairness_N4": 0.7917138735453287,
-        "fairness_N3_active": 0.7758443653583527,
-        "fairness_N4_active": 0.7917138735453287,
-        "runtime_vision_s": 3.76218660199811,
-        "runtime_part_N3_s": 6.838307408001128,
-        "runtime_part_N4_s": 10.495169727000757
+        "fairness_N3_relative": 0.6899697559883782,
+        "fairness_N4_relative": 0.7225737167883235,
+        "fairness_N3_relative_active": 0.6899697559883782,
+        "fairness_N4_relative_active": 0.7225737167883235,
+        "runtime_vision_s": 3.9577070600025763,
+        "runtime_part_N3_s": 6.349543771000754,
+        "runtime_part_N4_s": 9.902347191000445
       }
     ],
     "fairness_mean": {
-      "N=3": 0.5595682958761851,
-      "N=4": 0.590613947974311
+      "N=3": 0.5787797551214074,
+      "N=4": 0.649741013844808
     },
-    "fairness_mean_active": {
-      "N=3": 0.5595682958761851,
-      "N=4": 0.590613947974311
+    "fairness_mean_relative": {
+      "N=3": 0.7193334918876056,
+      "N=4": 0.6754535817699662
+    },
+    "fairness_mean_relative_active": {
+      "N=3": 0.7193334918876056,
+      "N=4": 0.6754535817699662
     },
     "runtime_mean_s": {
-      "vision": 5.623492567333112,
-      "partition_N3": 8.453136548667922,
-      "partition_N4": 13.763091470334379
+      "vision": 5.362021127668413,
+      "partition_N3": 7.508503861333641,
+      "partition_N4": 11.508926707334467
     },
     "hardest_ingredient_avg_deviation": {
-      "name": "fresh_basil",
-      "avg_max_abs_dev": 0.37915964921315515
+      "name": "basil_leaves",
+      "avg_max_abs_dev": 0.3312178810010664
     }
   }
 }
