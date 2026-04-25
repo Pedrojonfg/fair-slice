@@ -10,6 +10,7 @@ Responsible for:
 See README.md Section 4 for the full contract specification.
 """
 
+import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -90,6 +91,47 @@ def _draw_text_centered(
     for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
         draw.text((x + dx, y + dy), text, fill=shadow_color, font=font)
     draw.text((x, y), text, fill=color, font=font)
+
+
+def _foreground_clip_mask(base: Image.Image, size: tuple[int, int]) -> np.ndarray | None:
+    W, H = size
+    rgb = np.array(base.convert("RGB").resize((W, H), Image.LANCZOS))
+    hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+    sat = hsv[:, :, 1]
+    val = hsv[:, :, 2]
+
+    mask = ((sat > 18) | (val < 245)).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+
+    valid = []
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area < 0.10 * H * W:
+            continue
+        M = cv2.moments(c)
+        if M["m00"] < 1:
+            continue
+        cx = M["m10"] / M["m00"] / W
+        cy = M["m01"] / M["m00"] / H
+        if 0.10 < cx < 0.90 and 0.10 < cy < 0.90:
+            valid.append(c)
+
+    if not valid:
+        return None
+
+    clip = np.zeros((H, W), dtype=np.uint8)
+    cv2.drawContours(clip, [max(valid, key=cv2.contourArea)], -1, 1, thickness=-1)
+    coverage = float(clip.sum()) / float(H * W)
+    if not 0.10 <= coverage <= 0.85:
+        return None
+
+    return clip.astype(bool)
 
 
 # ---------------------------------------------------------------------------
@@ -223,15 +265,21 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
     # Resize to match mask dimensions
     H, W = np.asarray(masks[0]).shape
     base = base.resize((W, H), Image.LANCZOS)
+    clip_mask = _foreground_clip_mask(base, (W, H))
 
     overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     overlay_arr = np.array(overlay)
 
+    aligned_masks: list[np.ndarray] = []
     for i, mask in enumerate(masks[:n_people]):
-        color = PALETTE[i % len(PALETTE)]
         m = np.asarray(mask, dtype=bool)
         if m.shape != (H, W):
             raise ValueError(f"Mask shape {m.shape} does not match expected {(H, W)}")
+        if clip_mask is not None:
+            m = m & clip_mask
+        aligned_masks.append(m)
+
+        color = PALETTE[i % len(PALETTE)]
         overlay_arr[m] = color  # solo píxeles donde mask es True
 
     overlay = Image.fromarray(overlay_arr, "RGBA")
@@ -240,8 +288,7 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
     # Dibujar números centrados en cada región
     draw = ImageDraw.Draw(result)
     font = _load_font(56)
-    for i, mask in enumerate(masks[:n_people]):
-        m = np.asarray(mask, dtype=bool)
+    for i, m in enumerate(aligned_masks):
         ys, xs = np.where(m)
         if len(ys) == 0:
             continue

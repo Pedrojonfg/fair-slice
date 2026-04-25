@@ -129,6 +129,87 @@ def _fallback_dish_mask(H: int, W: int) -> np.ndarray:
     return mask.astype(bool)
 
 
+def _largest_component_mask(mask: np.ndarray) -> np.ndarray:
+    n_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask.astype(np.uint8), connectivity=8)
+    if n_labels <= 1:
+        return mask.astype(bool)
+    largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    return labels == largest
+
+
+def _mask_from_image_foreground(img_bgr: np.ndarray) -> np.ndarray | None:
+    """
+    Deterministic dish candidate from the photo itself.
+
+    This is intentionally tuned for the common demo case: a pizza/food item on a
+    clean white or light background. The threshold finds non-background pixels,
+    then morphology closes cheese/topping holes into one filled food silhouette.
+    """
+    H, W = img_bgr.shape[:2]
+    hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+    sat = hsv[:, :, 1]
+    val = hsv[:, :, 2]
+
+    non_background = (sat > 18) | (val < 245)
+    non_background = non_background.astype(np.uint8)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15, 15))
+    non_background = cv2.morphologyEx(non_background, cv2.MORPH_CLOSE, kernel, iterations=2)
+    non_background = cv2.morphologyEx(non_background, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    contours, _ = cv2.findContours(non_background, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+
+    valid = []
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area < 0.10 * H * W:
+            continue
+        M = cv2.moments(c)
+        if M["m00"] < 1:
+            continue
+        cx = M["m10"] / M["m00"] / W
+        cy = M["m01"] / M["m00"] / H
+        if 0.10 < cx < 0.90 and 0.10 < cy < 0.90:
+            valid.append(c)
+
+    if not valid:
+        return None
+
+    best = max(valid, key=cv2.contourArea)
+    candidate = np.zeros((H, W), dtype=np.uint8)
+    cv2.drawContours(candidate, [best], -1, 1, thickness=-1)
+    candidate = _largest_component_mask(candidate)
+
+    coverage = float(candidate.sum()) / float(H * W)
+    if not 0.10 <= coverage <= 0.80:
+        return None
+
+    return candidate
+
+
+def _refine_dish_mask(img_bgr: np.ndarray, dish_mask: np.ndarray) -> np.ndarray:
+    image_mask = _mask_from_image_foreground(img_bgr)
+    if image_mask is None:
+        return dish_mask
+
+    H, W = dish_mask.shape
+    old_coverage = float(dish_mask.sum()) / float(H * W)
+    new_coverage = float(image_mask.sum()) / float(H * W)
+    overlap = float((dish_mask & image_mask).sum()) / float(max(1, image_mask.sum()))
+
+    # Prefer the image-derived silhouette when Gemini/fallback spills outside the food.
+    if overlap > 0.55 and (old_coverage > new_coverage * 1.08 or old_coverage > 0.55):
+        print(
+            f"[vision] Refined dish mask from image foreground: "
+            f"{old_coverage:.3f} -> {new_coverage:.3f}"
+        )
+        return image_mask
+
+    return dish_mask
+
+
 # ---------------------------------------------------------------------------
 # Per-ingredient color segmentation
 # ---------------------------------------------------------------------------
@@ -281,6 +362,8 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
                 {"name": "tomato_sauce", "color_description": "red sauce"},
                 {"name": "cheese", "color_description": "white melted cheese"},
             ]
+
+    dish_mask = _refine_dish_mask(img_bgr, dish_mask)
 
     K = len(ingredients)
     ingredient_labels: dict[int, str] = {i: ing["name"] for i, ing in enumerate(ingredients)}
