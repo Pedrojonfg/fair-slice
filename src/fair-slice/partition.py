@@ -62,6 +62,9 @@ _BOUNDARY_PENALTY = 0.05         # soft projection strength
 _LLOYD_SHIFT_TOL = 0.5           # Lloyd early stop in pixels
 _RESEED_ALPHA_MOVE = 0.6         # active reseeding interpolation factor
 
+_MIN_CHANNEL_TOTAL_FRACTION = 1e-3  # canales con total < esto * max_total se ignoran en fairness
+_FAIRNESS_EARLY_EXIT = 0.92
+
 
 # ===========================================================================
 # Public API
@@ -200,6 +203,8 @@ def _solve_power_diagram(
     phases to keep generators aligned with the persons they best serve.
     """
     H, W, K = ingredient_map.shape
+    T_total = ingredient_map.reshape(-1, K).sum(axis=0)
+    active_channels = T_total > _MIN_CHANNEL_TOTAL_FRACTION * T_total.max()
 
     # --- Precompute things shared across restarts ---
     full_density = ingredient_map.sum(axis=-1)
@@ -249,7 +254,7 @@ def _solve_power_diagram(
             coords_opt, dens_opt, p, w,
             targets_opt, alpha,
             dt_outside, domain_full.shape,
-            max_iters=_WEIGHT_MAX_ITERS,
+            max_iters=_WEIGHT_MAX_ITERS // 2,
         )
 
         # Hungarian matching #2: re-match after weight optimization
@@ -269,7 +274,7 @@ def _solve_power_diagram(
             coords_opt, dens_opt, p, w,
             targets_opt, alpha,
             dt_outside, domain_full,
-            max_iters=_JOINT_MAX_ITERS,
+            max_iters=_JOINT_MAX_ITERS // 2,
         )
 
         # Final matching after joint phase
@@ -284,7 +289,41 @@ def _solve_power_diagram(
         if L_final < best_L:
             best_L, best_p, best_w = L_final, p, w
 
+        # Quick fairness estimate on the optimization grid (early exit).
+        assignment_temp = _assign(coords_opt, p, w)
+        temp_masks = _build_masks(coords_opt, assignment_temp, n_people, H, W)
+        temp_scores = _compute_scores(temp_masks, ingredient_map)
+        temp_fairness = _compute_fairness(
+            temp_scores,
+            P_norm,
+            active_channels,
+            ingredient_map,
+            domain_full,
+        )
+        if temp_fairness >= _FAIRNESS_EARLY_EXIT:
+            break
+
     p, w = best_p, best_w
+
+    # Refinamiento final solo con el mejor init
+    w = _phase_weights(
+        coords_opt, dens_opt, p, w,
+        targets_opt, alpha,
+        dt_outside, domain_full.shape,
+        max_iters=_WEIGHT_MAX_ITERS,
+    )
+    p, w = _match_persons_to_cells(
+        coords_opt, dens_opt, p, w, targets_opt, alpha
+    )
+    p, w = _phase_joint(
+        coords_opt, dens_opt, p, w,
+        targets_opt, alpha,
+        dt_outside, domain_full,
+        max_iters=_JOINT_MAX_ITERS,
+    )
+    p, w = _match_persons_to_cells(
+        coords_opt, dens_opt, p, w, targets_opt, alpha
+    )
 
     # --- Final assignment at FULL resolution ---
     coords_full, _ = _extract_domain(ingredient_map, domain_full)
@@ -293,7 +332,7 @@ def _solve_power_diagram(
     masks = _build_masks(coords_full, assignment_full, n_people, H, W)
     masks = _enforce_connectivity(masks, domain_full)
     scores = _compute_scores(masks, ingredient_map)
-    fairness = _compute_fairness(scores, P_norm)
+    fairness = _compute_fairness(scores, P_norm, active_channels, ingredient_map, domain_full)
 
     return {
         "masks": masks,
@@ -1009,38 +1048,108 @@ def _compute_scores(
     n = len(masks)
     K = ingredient_map.shape[-1]
     totals = ingredient_map.reshape(-1, K).sum(axis=0)
-    totals_safe = np.where(totals > 1e-12, totals, 1.0)
+    active_channels = totals > _MIN_CHANNEL_TOTAL_FRACTION * totals.max()
+    totals_safe = np.where(active_channels & (totals > 1e-12), totals, 1.0)
     scores = np.zeros((n, K), dtype=np.float32)
     for i, m in enumerate(masks):
         if not m.any():
             continue
         per_channel = ingredient_map[m].sum(axis=0)
-        scores[i, :] = (per_channel / totals_safe).astype(np.float32)
+        s = (per_channel / totals_safe).astype(np.float32)
+        s[~active_channels] = 0.0
+        scores[i, :] = s
     return scores
 
 
-def _compute_fairness(scores: np.ndarray, P_norm: np.ndarray) -> float:
+def _compute_fairness(
+    scores: np.ndarray,          # (N, K) float32
+    P_norm: np.ndarray,          # (N, K) float64
+    active_channels: np.ndarray | None = None,  # (K,) bool
+    ingredient_map: np.ndarray | None = None,   # (H, W, K) float32
+    dish_mask: np.ndarray | None = None,        # (H, W) bool
+) -> float:
     """
-    Generalized fairness with preferences.
+    Fairness metric for a partition.
 
-    Each person i wants P_norm[i, j] of ingredient j and receives scores[i, j].
-    Deviation per (i, j) = |scores[i, j] - P_norm[i, j]|.
-    Normalized by the worst possible deviation:
-        worst[i, j] = max(P_norm[i, j], 1 - P_norm[i, j])
+    Backward-compatible mode (default):
+      If `ingredient_map` or `dish_mask` is not provided, compute the original
+      preference-aware metric:
+        fairness = 1 - max_{i,j} |scores[i,j] - P_norm[i,j]| / max(P_norm[i,j], 1-P_norm[i,j]).
 
-    fairness = 1 - max(deviation / worst), clipped to [0, 1].
+    Relative-to-achievable mode:
+      If `ingredient_map` and `dish_mask` are provided, compute fairness
+      relative to the *best distribution that is physically achievable* given
+      the input geometry.
 
-    Properties:
-      - 1.0 = every person receives exactly their preferred share.
-      - 0.0 = at least one entry is the worst possible (e.g. wanted 100%, got 0%).
-      - When P_norm is uniform (1/N), worst = 1 - 1/N for every entry, so the
-        metric is consistent with the README's spirit but uses the worst-case
-        normalization rather than the ideal share.
+      Intuition: some ingredients occupy only a small fraction of the dish area,
+      making an equal split impossible even with perfect cuts. In this mode,
+      `fairness=1.0` means “you achieved the best possible split given the
+      ingredient layout”, not “a perfect equal split exists”.
     """
     s = scores.astype(np.float64)
+
+    if active_channels is not None:
+        active = np.asarray(active_channels, dtype=bool)
+        if active.ndim != 1:
+            raise ValueError("active_channels must be a 1D boolean array (K,)")
+        if active.size != s.shape[1]:
+            raise ValueError("active_channels has wrong shape")
+        if not active.any():
+            return 1.0
+    else:
+        active = np.ones(s.shape[1], dtype=bool)
+
+    # Relative-to-achievable metric (uniform ideal split, adjusted by coverage constraints)
+    if ingredient_map is not None and dish_mask is not None:
+        imap = np.asarray(ingredient_map)
+        dmask = np.asarray(dish_mask, dtype=bool)
+        if imap.ndim != 3 or dmask.ndim != 2:
+            raise ValueError("ingredient_map must be (H,W,K) and dish_mask must be (H,W)")
+        if imap.shape[:2] != dmask.shape:
+            raise ValueError("ingredient_map and dish_mask shape mismatch")
+        if imap.shape[2] != s.shape[1]:
+            raise ValueError("ingredient_map K mismatch with scores")
+
+        dish_area = float(dmask.sum())
+        if dish_area <= 0:
+            # Degenerate: fall back to the original metric
+            ingredient_map = None
+        else:
+            n_people = int(s.shape[0])
+            ideal = 1.0 / float(n_people)
+
+            # Weights by ingredient mass T_j over the dish
+            T_total = imap.reshape(-1, imap.shape[2]).sum(axis=0).astype(np.float64)
+            weights = T_total[active]
+            w_sum = float(weights.sum())
+            if w_sum <= 1e-18:
+                return 1.0
+            weights = weights / w_sum
+
+            rel_fairness_vals: list[float] = []
+            active_idx = np.where(active)[0]
+            for j in active_idx:
+                presence_j = imap[:, :, j] > 0.05
+                f_j = float(presence_j[dmask].sum()) / dish_area
+                min_dev_j = max(0.0, ideal - f_j)
+
+                actual_dev_j = float(np.abs(s[:, j] - ideal).max())
+                achievable_dev_j = max(0.0, actual_dev_j - min_dev_j)
+                worst_possible_j = max(ideal - min_dev_j, 1e-9)
+
+                rel_fairness_j = 1.0 - achievable_dev_j / worst_possible_j
+                rel_fairness_j = float(np.clip(rel_fairness_j, 0.0, 1.0))
+                rel_fairness_vals.append(rel_fairness_j)
+
+            rel_fairness_arr = np.asarray(rel_fairness_vals, dtype=np.float64)
+            return float(np.clip(np.sum(rel_fairness_arr * weights), 0.0, 1.0))
+
+    # Original metric (preference-aware, worst-case normalized deviation)
     P = P_norm.astype(np.float64)
-    dev = np.abs(s - P)
-    worst = np.maximum(P, 1.0 - P)
+    s0 = s[:, active]
+    P0 = P[:, active]
+    dev = np.abs(s0 - P0)
+    worst = np.maximum(P0, 1.0 - P0)
     worst = np.where(worst > 1e-12, worst, 1.0)
     norm_dev = dev / worst
     return float(np.clip(1.0 - norm_dev.max(), 0.0, 1.0))
@@ -1065,6 +1174,8 @@ def _solve_radial(
     non-uniform AND ingredients are angularly heterogeneous.
     """
     H, W, K = ingredient_map.shape
+    T_total = ingredient_map.reshape(-1, K).sum(axis=0)
+    active_channels = T_total > _MIN_CHANNEL_TOTAL_FRACTION * T_total.max()
     total_density = ingredient_map.sum(axis=-1)
     domain = total_density > _EPS_DISH
 
@@ -1136,7 +1247,7 @@ def _solve_radial(
     seeds = np.stack([raw_seeds[col_ind[i]] for i in range(n_people)])
 
     scores = _compute_scores(masks, ingredient_map)
-    fairness = _compute_fairness(scores, P_norm)
+    fairness = _compute_fairness(scores, P_norm, active_channels, ingredient_map, domain)
 
     return {
         "masks": masks,
