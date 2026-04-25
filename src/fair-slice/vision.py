@@ -75,7 +75,8 @@ Rules:
 1. Group very similar ingredients together (e.g., all cheese → "mozzarella").
 2. Return between 2 and 8 ingredients total.
 3. Put the BASE ingredient (dough, bread, rice…) FIRST in the list.
-4. For each ingredient, describe its visual color/appearance so it can be detected with OpenCV.
+4. The pizza crust/border is ALSO an ingredient ("crust") and must be included if visible, so it can be allocated according to user preferences.
+5. For each ingredient, describe its visual color/appearance so it can be detected with OpenCV.
 
 Return ONLY a valid JSON array, no extra text, no markdown fences.
 Example format:
@@ -307,8 +308,9 @@ def _detect_dish_mask(img_bgr: np.ndarray, model, image_path: str) -> np.ndarray
     prompt = """Look at this image. Find the dish, pizza, or food item.
 Return ONLY a JSON object with a polygon that traces the boundary of the dish:
 {"points": [[x1_frac, y1_frac], [x2_frac, y2_frac], ...]}
-Use 8 to 16 points. All values are fractions of image width (x) or height (y), between 0 and 1.
+Use 20 to 32 points, evenly spaced around the boundary. All values are fractions of image width (x) or height (y), between 0 and 1.
 Trace the actual boundary of the food, not a bounding box.
+Make sure the polygon includes the outer edge/border (e.g., pizza crust), not just the interior.
 No markdown, no explanation, just the JSON."""
 
     try:
@@ -332,8 +334,10 @@ No markdown, no explanation, just the JSON."""
         )
         return mask.astype(bool)
     except Exception as e:
-        print(f"[vision] Gemini dish detection failed ({e}), using full image")
-        return np.ones((H, W), dtype=bool)
+        raise ValueError(
+            "No se pudo detectar el borde del plato/pizza (polígono) con IA. "
+            "La imagen no es lo suficientemente buena; no se puede continuar."
+        ) from e
 
 
 # ---------------------------------------------------------------------------
