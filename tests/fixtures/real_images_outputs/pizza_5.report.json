@@ -1,0 +1,18 @@
+{
+  "image": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_5.jpg",
+  "started_at_ms": 1777107732873,
+  "vision": {
+    "ok": false,
+    "runtime_s": 0.022064266002416844,
+    "error_type": "OSError",
+    "error_message": "GOOGLE_CLOUD_PROJECT environment variable is not set. See README section 6.3 for setup instructions.",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/pedrojon/fair-slice/tests/run_real_images_pipeline.py\", line 73, in _run_stage\n    out = fn(*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^\n  File \"/home/pedrojon/fair-slice/src/fair-slice/vision.py\", line 545, in segment_dish\n    model = _init_vertex()\n            ^^^^^^^^^^^^^^\n  File \"/home/pedrojon/fair-slice/src/fair-slice/vision.py\", line 47, in _init_vertex\n    raise EnvironmentError(\nOSError: GOOGLE_CLOUD_PROJECT environment variable is not set. See README section 6.3 for setup instructions.\n",
+    "stdout": "[vision] Perspective ratio: 0.959  (minor=325.6, major=339.7, angle=87.5°)\n[vision] Dish is close enough to circular — no correction needed.\n",
+    "stderr": "",
+    "extra": {}
+  },
+  "partition": [],
+  "visualize": [],
+  "artifacts_dir": "/home/pedrojon/fair-slice/tests/fixtures/real_images_outputs/pizza_5",
+  "ended_at_ms": 1777107732895
+}

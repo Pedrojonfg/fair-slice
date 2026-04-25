@@ -15,8 +15,9 @@ import os
 
 import cv2
 import numpy as np
-import vertexai
-from vertexai.generative_models import GenerativeModel, Image as VertexImage
+import google.generativeai as genai
+from dotenv import load_dotenv
+from PIL import Image
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -38,22 +39,16 @@ PERSPECTIVE_ABORT_THRESHOLD       = 0.40  # below → raise, result would be unr
 # Vertex AI / Gemini helpers
 # ---------------------------------------------------------------------------
 
-def _init_vertex() -> GenerativeModel:
-    """Initialise Vertex AI from environment variables and return the model."""
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT")
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-
-    if not project:
-        raise EnvironmentError(
-            "GOOGLE_CLOUD_PROJECT environment variable is not set. "
-            "See README section 6.3 for setup instructions."
-        )
-
-    vertexai.init(project=project, location=location)
-    return GenerativeModel("gemini-1.5-flash")
+def _init_model() -> genai.GenerativeModel:
+    load_dotenv()
+    api_key = os.environ.get("GOOGLE_AI_API_KEY")
+    if not api_key:
+        raise EnvironmentError("GOOGLE_AI_API_KEY not set in .env")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel("gemini-2.0-flash")
 
 
-def _call_gemini(model: GenerativeModel, image_path: str) -> list[dict]:
+def _call_gemini(model: genai.GenerativeModel, image_path: str) -> list[dict]:
     """
     Ask Gemini to identify every ingredient in the dish photo.
 
@@ -65,7 +60,7 @@ def _call_gemini(model: GenerativeModel, image_path: str) -> list[dict]:
         ]
     The list is ordered with the base/dough ingredient first (channel 0).
     """
-    vertex_image = VertexImage.load_from_file(image_path)
+    image = Image.open(image_path)
 
     prompt = """Analyze this dish photo carefully.
 
@@ -89,7 +84,7 @@ Example format:
   {"name": "pepperoni",   "color_description": "dark reddish-brown small circles"}
 ]"""
 
-    response = model.generate_content([vertex_image, prompt])
+    response = model.generate_content([image, prompt])
     raw = response.text.strip()
 
     # Strip accidental markdown fences if Gemini adds them
@@ -542,7 +537,7 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     # ------------------------------------------------------------------
     # 5. Ask Gemini what ingredients are in the dish
     # ------------------------------------------------------------------
-    model = _init_vertex()
+    model = _init_model()
     ingredients = _call_gemini(model, image_path)  # list[dict]
 
     K = len(ingredients)

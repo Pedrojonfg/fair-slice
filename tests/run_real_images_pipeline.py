@@ -21,11 +21,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import time
 import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import contextlib
+import io
 
 import numpy as np
 
@@ -34,8 +37,14 @@ ROOT = Path(__file__).resolve().parents[1]
 REAL_DIR = ROOT / "tests" / "fixtures" / "real_images"
 OUT_DIR = ROOT / "tests" / "fixtures" / "real_images_outputs"
 
+# Make src/fair-slice importable when running as a script.
+_SRC_DIR = ROOT / "src" / "fair-slice"
+if str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
+
 
 def _is_image(path: Path) -> bool:
+    # Keep this aligned with what OpenCV can reliably decode in this project.
     return path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
 
 
@@ -50,13 +59,18 @@ class StageResult:
     error_type: str | None = None
     error_message: str | None = None
     traceback: str | None = None
+    stdout: str | None = None
+    stderr: str | None = None
     extra: dict[str, Any] | None = None
 
 
 def _run_stage(fn, *args, **kwargs) -> tuple[StageResult, Any]:
     t0 = time.perf_counter()
+    buf_out = io.StringIO()
+    buf_err = io.StringIO()
     try:
-        out = fn(*args, **kwargs)
+        with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
+            out = fn(*args, **kwargs)
         return StageResult(ok=True, runtime_s=time.perf_counter() - t0, extra={}), out
     except Exception as e:  # noqa: BLE001 (script wants full diagnostics)
         return (
@@ -66,6 +80,8 @@ def _run_stage(fn, *args, **kwargs) -> tuple[StageResult, Any]:
                 error_type=type(e).__name__,
                 error_message=str(e),
                 traceback=traceback.format_exc(),
+                stdout=buf_out.getvalue(),
+                stderr=buf_err.getvalue(),
                 extra={},
             ),
             None,
