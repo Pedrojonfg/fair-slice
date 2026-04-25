@@ -219,66 +219,32 @@ def render_partition(
 
 
 def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> Image.Image:
-    """
-    Render a simple overlay for Streamlit:
-      - color each person's mask with a distinct semi-transparent color
-      - draw the person number at the mask centroid
-
-    Returns a PIL.Image (RGB) independent of Streamlit.
-    """
-    if n_people < 1:
-        raise ValueError("n_people must be >= 1")
-    if not masks:
-        raise ValueError("masks list is empty")
-
     base = Image.open(image_path).convert("RGBA")
+    # Resize to match mask dimensions
+    H, W = masks[0].shape
+    base = base.resize((W, H), Image.LANCZOS)
 
-    mask_h, mask_w = np.asarray(masks[0]).shape[:2]
-    if base.size != (mask_w, mask_h):
-        base = base.resize((mask_w, mask_h), Image.LANCZOS)
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    overlay_arr = np.array(overlay)
 
-    W, H = base.size
-
-    aligned_masks: list[np.ndarray] = []
     for i, mask in enumerate(masks[:n_people]):
-        m = np.asarray(mask, dtype=bool)
-        if m.shape != (H, W):
-            pil_m = Image.fromarray((m.astype(np.uint8) * 255)).resize((W, H), Image.NEAREST)
-            m = np.array(pil_m) > 127
-        aligned_masks.append(m)
+        color = PALETTE[i % len(PALETTE)]
+        overlay_arr[mask] = color  # solo píxeles donde mask es True
 
-    img = base
-    for i in range(n_people):
-        if i >= len(aligned_masks):
-            break
-        color_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
-        draw_array = np.array(color_layer)
-        draw_array[aligned_masks[i]] = PALETTE[i % len(PALETTE)]  # solo píxeles de la máscara
-        color_layer = Image.fromarray(draw_array, "RGBA")
-        img = Image.alpha_composite(img.convert("RGBA"), color_layer)
+    overlay = Image.fromarray(overlay_arr, "RGBA")
+    result = Image.alpha_composite(base, overlay)
 
-    out = img.convert("RGB")
-    draw = ImageDraw.Draw(out)
-    font = _load_font(40)
-
-    for i in range(n_people):
-        if i >= len(aligned_masks):
-            break
-        ys, xs = np.where(aligned_masks[i])
-        if len(xs) == 0:
+    # Dibujar números centrados en cada región
+    draw = ImageDraw.Draw(result)
+    for i, mask in enumerate(masks[:n_people]):
+        ys, xs = np.where(mask)
+        if len(ys) == 0:
             continue
-        cx, cy = int(xs.mean()), int(ys.mean())
-        _draw_text_centered(
-            draw,
-            cx,
-            cy,
-            str(i + 1),
-            font,
-            color=(255, 255, 255),
-            shadow_color=(0, 0, 0),
-        )
+        cy, cx = int(ys.mean()), int(xs.mean())
+        text = str(i + 1)
+        draw.text((cx, cy), text, fill=(255, 255, 255, 255), anchor="mm")
 
-    return out
+    return result.convert("RGB")
 
 
 # ---------------------------------------------------------------------------
