@@ -146,12 +146,29 @@ def test_real_images_pipeline_smoke():
             ideal = 1.0 / float(N)
             per_ing = {}
             print("\nPer-ingredient deviation (max(|scores[:,k] - 1/N|)):")
+            # Importance weights used by the relative fairness aggregation:
+            # w_j ∝ sum_i P_norm[i, j], normalized over active channels.
+            importance = P_norm.sum(axis=0).astype(float)  # (K,)
+            importance_active_sum = float(importance[active_channels].sum())
+            if importance_active_sum <= 1e-18:
+                ingredient_importance = np.zeros(K, dtype=float)
+                if bool(active_channels.any()):
+                    ingredient_importance[active_channels] = 1.0 / float(active_channels.sum())
+            else:
+                ingredient_importance = np.zeros(K, dtype=float)
+                ingredient_importance[active_channels] = importance[active_channels] / importance_active_sum
             for k in range(K):
                 name = labels_dict.get(k, f"channel_{k}")
                 dev = float(np.max(np.abs(scores[:, k] - ideal)))
-                per_ing[k] = {"name": name, "max_abs_dev": dev, "ideal": ideal, "active": bool(active_channels[k])}
+                per_ing[k] = {
+                    "name": name,
+                    "max_abs_dev": dev,
+                    "ideal": ideal,
+                    "active": bool(active_channels[k]),
+                    "ingredient_importance": float(ingredient_importance[k]),
+                }
                 active_tag = "active" if active_channels[k] else "inactive"
-                print(f"- {name} ({active_tag}): {dev:.3f}")
+                print(f"- {name} ({active_tag}): {dev:.3f} (importance={ingredient_importance[k]:.3f})")
                 ingredient_deviation_accum.setdefault(name, []).append(dev)
 
             runs[str(N)] = {

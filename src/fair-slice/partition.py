@@ -1118,13 +1118,19 @@ def _compute_fairness(
             n_people = int(s.shape[0])
             ideal = 1.0 / float(n_people)
 
-            # Weights by ingredient mass T_j over the dish
-            T_total = imap.reshape(-1, imap.shape[2]).sum(axis=0).astype(np.float64)
-            weights = T_total[active]
+            # Channel importance weights (normalized over active channels).
+            # We use preference importance per ingredient:
+            #   w_j ∝ sum_i P_norm[i, j]
+            # With column-normalized preferences this is uniform (=1) per channel,
+            # so the result matches equal weighting when preferences are uniform.
+            P_full = P_norm.astype(np.float64)
+            importance = P_full.sum(axis=0)  # (K,)
+            weights = importance[active]
             w_sum = float(weights.sum())
             if w_sum <= 1e-18:
-                return 1.0
-            weights = weights / w_sum
+                weights = np.full(active.sum(), 1.0 / float(active.sum()), dtype=np.float64)
+            else:
+                weights = weights / w_sum
 
             rel_fairness_vals: list[float] = []
             active_idx = np.where(active)[0]
