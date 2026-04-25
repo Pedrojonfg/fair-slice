@@ -28,3 +28,6 @@ pytest>=7.4.0
 
 # --- Utilities ---
 python-dotenv>=1.0.0               # load .env for API keys
+
+# --- UI ---
+streamlit>=1.33.0

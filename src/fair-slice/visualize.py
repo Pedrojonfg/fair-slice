@@ -29,6 +29,21 @@ PERSON_COLORS: list[tuple[int, int, int, int]] = [
 
 BOUNDARY_THICKNESS = 3  # pixels
 
+# ---------------------------------------------------------------------------
+# Palette recommended for Streamlit overlay (RGBA, alpha=120)
+# ---------------------------------------------------------------------------
+
+PALETTE: list[tuple[int, int, int, int]] = [
+    (255, 99, 71, 120),  # tomato
+    (100, 149, 237, 120),  # cornflower blue
+    (144, 238, 144, 120),  # light green
+    (255, 215, 0, 120),  # gold
+    (218, 112, 214, 120),  # orchid
+    (255, 165, 0, 120),  # orange
+    (135, 206, 235, 120),  # sky blue
+    (240, 128, 128, 120),  # light coral
+]
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -201,6 +216,64 @@ def render_partition(
         )
 
     return result_rgb
+
+
+def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> Image.Image:
+    """
+    Render a simple overlay for Streamlit:
+      - color each person's mask with a distinct semi-transparent color
+      - draw the person number at the mask centroid
+
+    Returns a PIL.Image (RGB) independent of Streamlit.
+    """
+    if n_people < 1:
+        raise ValueError("n_people must be >= 1")
+    if not masks:
+        raise ValueError("masks list is empty")
+
+    base = Image.open(image_path).convert("RGBA")
+
+    mask_h, mask_w = np.asarray(masks[0]).shape[:2]
+    if base.size != (mask_w, mask_h):
+        base = base.resize((mask_w, mask_h), Image.LANCZOS)
+
+    W, H = base.size
+
+    label_map = np.full((H, W), -1, dtype=np.int16)
+    for i, mask in enumerate(masks[:n_people]):
+        m = np.asarray(mask, dtype=bool)
+        if m.shape != (H, W):
+            pil_m = Image.fromarray((m.astype(np.uint8) * 255)).resize((W, H), Image.NEAREST)
+            m = np.array(pil_m) > 127
+        label_map[m] = i
+
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    for i in range(n_people):
+        r, g, b, a = PALETTE[i % len(PALETTE)]
+        region = np.zeros((H, W, 4), dtype=np.uint8)
+        region[label_map == i] = [r, g, b, a]
+        overlay = Image.alpha_composite(overlay, Image.fromarray(region))
+
+    out = Image.alpha_composite(base, overlay).convert("RGB")
+    draw = ImageDraw.Draw(out)
+    font = _load_font(40)
+
+    for i in range(n_people):
+        ys, xs = np.where(label_map == i)
+        if len(xs) == 0:
+            continue
+        cx, cy = int(xs.mean()), int(ys.mean())
+        _draw_text_centered(
+            draw,
+            cx,
+            cy,
+            str(i + 1),
+            font,
+            color=(255, 255, 255),
+            shadow_color=(0, 0, 0),
+        )
+
+    return out
 
 
 # ---------------------------------------------------------------------------
