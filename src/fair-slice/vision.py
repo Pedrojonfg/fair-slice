@@ -569,11 +569,20 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     # ------------------------------------------------------------------
     pixel_total = ingredient_map.sum(axis=2)             # (H, W)
     unclaimed = (pixel_total < 0.05) & dish_mask         # nearly zero inside dish
-    ingredient_map[unclaimed, 0] = 1.0                   # assign to base channel
+    ingredient_map[unclaimed, 0] = 0.3                   # assign to base channel (low confidence)
 
     # ------------------------------------------------------------------
     # 8. Normalize so channels sum to 1.0 at every dish pixel
     # ------------------------------------------------------------------
+    dish_pixels = int(dish_mask.sum())
+    if dish_pixels > 0:
+        for k in range(K):
+            channel = ingredient_map[:, :, k]
+            coverage = float(((channel > 0.1) & dish_mask).sum()) / dish_pixels
+            mean_val = float(channel[dish_mask].mean())
+            name = ingredient_labels.get(k, f"channel_{k}")
+            print(f"[vision] Canal {k} ({name}): cobertura={coverage:.1%}, media={mean_val:.3f}")
+
     ingredient_map = _normalize_map(ingredient_map, dish_mask)
 
     # ------------------------------------------------------------------

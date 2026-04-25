@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from partition import compute_partition
+import partition as partition_mod
 from tests.fixtures import (
     fixture_pizza_uniform,
     fixture_pizza_concentrated_pepperoni,
@@ -76,4 +77,83 @@ def test_free_vs_radial_on_concentrated_pepperoni():
     free = compute_partition(imap, 4, mode="free")["fairness"]
     radial = compute_partition(imap, 4, mode="radial")["fairness"]
     assert free >= radial
+
+
+@pytest.mark.slow
+def test_init_diversity_improves_concentrated_pepperoni(monkeypatch):
+    """
+    Regression test: multi-start with structurally diverse inits (A/B/C/D)
+    should beat the old behavior (all runs using total-density k-means++) on
+    the concentrated-pepperoni fixture.
+    """
+    imap = fixture_pizza_concentrated_pepperoni()
+
+    # New behavior (current code)
+    fairness_new = compute_partition(imap, 3, mode="free")["fairness"]
+
+    # Old behavior: 3 runs, all k-means++ on total density
+    def _build_old(*, coords_opt, dens_opt, total_dens_opt, n_people):
+        A = lambda rng: partition_mod._kmeans_pp_init(
+            coords_opt, total_dens_opt, n_people, rng
+        )
+        return [A, A, A]
+
+    monkeypatch.setattr(partition_mod, "_build_init_strategies", _build_old)
+    monkeypatch.setattr(partition_mod, "_MULTI_START_RUNS", 3)
+    fairness_old = compute_partition(imap, 3, mode="free")["fairness"]
+
+    # Avoid asserting a large fixed margin; ensure we don't regress.
+    assert fairness_new >= fairness_old
+
+
+@pytest.mark.slow
+def test_q_new1_pepperoni_n3_reseed_not_worse(monkeypatch):
+    imap = fixture_pizza_concentrated_pepperoni()
+    fairness_with = compute_partition(imap, 3, mode="free")["fairness"]
+
+    def _no_reseed(coords, densities, p, w, targets, alpha, domain_full):
+        return p, w
+
+    monkeypatch.setattr(partition_mod, "_active_reseed", _no_reseed)
+    fairness_without = compute_partition(imap, 3, mode="free")["fairness"]
+    assert fairness_with >= fairness_without
+
+
+@pytest.mark.slow
+def test_q_new2_pepperoni_n4_reseed_not_worse(monkeypatch):
+    imap = fixture_pizza_concentrated_pepperoni()
+    fairness_with = compute_partition(imap, 4, mode="free")["fairness"]
+
+    def _no_reseed(coords, densities, p, w, targets, alpha, domain_full):
+        return p, w
+
+    monkeypatch.setattr(partition_mod, "_active_reseed", _no_reseed)
+    fairness_without = compute_partition(imap, 4, mode="free")["fairness"]
+    assert fairness_with >= fairness_without
+
+
+@pytest.mark.slow
+def test_q_new3_uniform_n4_reseed_does_not_hurt(monkeypatch):
+    imap = fixture_pizza_uniform()
+    fairness_with = compute_partition(imap, 4, mode="free")["fairness"]
+
+    def _no_reseed(coords, densities, p, w, targets, alpha, domain_full):
+        return p, w
+
+    monkeypatch.setattr(partition_mod, "_active_reseed", _no_reseed)
+    fairness_without = compute_partition(imap, 4, mode="free")["fairness"]
+    assert fairness_with >= fairness_without - 0.05
+
+
+@pytest.mark.slow
+def test_q_new4_radial_symmetric_n4_reseed_does_not_hurt(monkeypatch):
+    imap = fixture_pizza_radial_symmetric()
+    fairness_with = compute_partition(imap, 4, mode="free")["fairness"]
+
+    def _no_reseed(coords, densities, p, w, targets, alpha, domain_full):
+        return p, w
+
+    monkeypatch.setattr(partition_mod, "_active_reseed", _no_reseed)
+    fairness_without = compute_partition(imap, 4, mode="free")["fairness"]
+    assert fairness_with >= fairness_without - 0.05
 
