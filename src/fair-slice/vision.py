@@ -114,6 +114,14 @@ Example format:
 # Perspective correction
 # ---------------------------------------------------------------------------
 
+def _circularity(contour) -> float:
+    area = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour, True)
+    if perimeter < 1e-3:
+        return 0.0
+    return 4 * np.pi * area / (perimeter ** 2)
+
+
 def correct_perspective(img_bgr: np.ndarray) -> np.ndarray:
     """
     Detects whether the dish appears as an ellipse (tilted camera) and, if so,
@@ -172,6 +180,12 @@ def correct_perspective(img_bgr: np.ndarray) -> np.ndarray:
     dish_contour = max(valid, key=cv2.contourArea)
     if len(dish_contour) < 5:
         print("[vision] correct_perspective: contour too small for ellipse fit, skipping.")
+        return img_bgr
+
+    circ = _circularity(dish_contour)
+    print(f"[vision] Circularidad del contorno: {circ:.3f}")
+    if circ > 0.80:
+        print("[vision] Contorno suficientemente circular — saltando corrección de perspectiva.")
         return img_bgr
 
     (cx, cy), (axis_w, axis_h), angle_deg = cv2.fitEllipse(dish_contour)
@@ -287,52 +301,15 @@ def correct_perspective(img_bgr: np.ndarray) -> np.ndarray:
 # Dish boundary detection
 # ---------------------------------------------------------------------------
 
-def _detect_dish_mask(img_bgr: np.ndarray) -> np.ndarray:
-    """
-    Returns a boolean mask (H, W) — True for pixels that are part of the dish.
-
-    Strategy:
-      1. Try Hough Circle detection (great for pizzas, cakes, paella).
-      2. Fallback: largest contour in a foreground/background separation.
-    """
+def _detect_dish_mask(img_bgr):
     H, W = img_bgr.shape[:2]
-    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (9, 9), 2)
-
-    # --- Attempt 1: Hough circles ---
-    min_r = int(min(H, W) * 0.25)
-    max_r = int(min(H, W) * 0.55)
-    circles = cv2.HoughCircles(
-        blurred,
-        cv2.HOUGH_GRADIENT,
-        dp=1.2,
-        minDist=min(H, W) // 2,
-        param1=100,
-        param2=40,
-        minRadius=min_r,
-        maxRadius=max_r,
-    )
-
-    if circles is not None:
-        cx, cy, r = np.round(circles[0][0]).astype(int)
-        mask = np.zeros((H, W), dtype=bool)
-        cv2.circle(mask.view(np.uint8), (cx, cy), r, 1, thickness=-1)
-        # Accept if circle covers at least 20% of the image
-        if mask.sum() > 0.20 * H * W:
-            return mask
-
-    # --- Fallback: grab-cut / largest contour ---
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-    # Broad saturation threshold to find the dish vs plain background
     sat = hsv[:, :, 1]
     _, thresh = cv2.threshold(sat, 30, 255, cv2.THRESH_BINARY)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((15, 15), np.uint8))
-
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        # Last resort: use the entire image
         return np.ones((H, W), dtype=bool)
-
     largest = max(contours, key=cv2.contourArea)
     mask = np.zeros((H, W), dtype=bool)
     cv2.drawContours(mask.view(np.uint8), [largest], -1, 1, thickness=-1)
@@ -350,8 +327,8 @@ _HSV_HINTS: dict[str, tuple[np.ndarray, np.ndarray]] = {
     "tomato":       (np.array([0, 100, 80]),   np.array([15, 255, 255])),
     "sauce":        (np.array([0,  80, 60]),   np.array([20, 255, 220])),
     "pepperoni":    (np.array([0, 120, 60]),   np.array([12, 255, 200])),
-    "mozzarella":   (np.array([15,  0, 160]),  np.array([40, 60,  255])),
-    "cheese":       (np.array([15,  0, 150]),  np.array([40, 80,  255])),
+    "mozzarella":   (np.array([10,  20, 140]), np.array([45, 180, 255])),
+    "cheese":       (np.array([10,  20, 130]), np.array([45, 180, 255])),
     "olive":        (np.array([35, 40,  20]),  np.array([90, 180, 130])),
     "mushroom":     (np.array([10, 20,  80]),  np.array([30, 80,  200])),
     "basil":        (np.array([35, 80,  40]),  np.array([85, 255, 200])),
