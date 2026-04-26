@@ -17,6 +17,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from google import genai
+from google.cloud import vision as gvision
 from dotenv import load_dotenv
 from PIL import Image
 
@@ -27,7 +28,7 @@ from PIL import Image
 TARGET_SIZE = 500           # Resize longest edge to this before any processing
 MAX_INGREDIENTS = 8         # Hard cap — group beyond this
 MIN_INGREDIENTS = 2         # Gemini must return at least this many
-MIN_CHANNEL_MEAN_COVERAGE = 0.02  # canales con media < esto sobre dish_mask se eliminan
+MIN_CHANNEL_MEAN_COVERAGE = 0.008  # canales con media < esto sobre dish_mask se eliminan
 
 
 # ---------------------------------------------------------------------------
@@ -42,44 +43,102 @@ def _init_model() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def _call_gemini_combined(client: genai.Client, image_path: str, H: int, W: int) -> tuple[list[dict], np.ndarray]:
+def _detect_dish_mask_vision_api(img_bgr: np.ndarray, image_path: str) -> np.ndarray:
     """
-    Single Gemini call that returns BOTH the ingredient list and the dish polygon.
-    Saves one API call (faster) and ensures consistency between detection and labeling.
+    Uses Google Cloud Vision Object Localization to detect the dish boundary.
+    Returns a bool mask (H, W). Falls back to center ellipse if detection fails.
+    """
+    H, W = img_bgr.shape[:2]
 
-    Returns:
-        ingredients: list of dicts with name + color_description
-        dish_mask: bool ndarray (H, W) — True inside the dish
-    """
+    try:
+        client = gvision.ImageAnnotatorClient()
+        with open(image_path, "rb") as f:
+            content = f.read()
+        image = gvision.Image(content=content)
+        response = client.object_localization(image=image)
+
+        # Look for food-related objects: pizza, food, dish, pastry, etc.
+        FOOD_LABELS = {
+            "pizza", "food", "dish", "cake", "pie", "pastry",
+            "bread", "meal", "plate", "baked goods", "cuisine"
+        }
+
+        best = None
+        best_score = 0.0
+        for obj in response.localized_object_annotations:
+            label = obj.name.lower()
+            if any(food in label for food in FOOD_LABELS) and obj.score > best_score:
+                best = obj
+                best_score = obj.score
+
+        # Fallback: if no food label found, use the highest-confidence object
+        if best is None and response.localized_object_annotations:
+            best = max(response.localized_object_annotations, key=lambda o: o.score)
+
+        if best is None:
+            raise ValueError("No objects detected by Vision API")
+
+        # Convert normalized vertices to pixel coordinates
+        pts = np.array(
+            [[int(v.x * W), int(v.y * H)]
+             for v in best.bounding_poly.normalized_vertices],
+            dtype=np.int32,
+        )
+        print(f"[vision] Vision API bounding box raw: {pts.tolist()}")
+
+        # Usar directamente el polígono de Vision API sin convertir a elipse
+        mask = np.zeros((H, W), dtype=np.uint8)
+        cv2.fillPoly(mask, [pts], 1)
+
+        # Si el polígono es solo un rectángulo (4 puntos), añadir más puntos
+        # interpolando el contorno para suavizar
+        if len(pts) == 4:
+            # Calcular centro y semiejes del bounding box
+            x1, y1 = pts[:, 0].min(), pts[:, 1].min()
+            x2, y2 = pts[:, 0].max(), pts[:, 1].max()
+            cx = (x1 + x2) // 2
+            cy = (y1 + y2) // 2
+            rx = int((x2 - x1) / 2 * 0.96)
+            ry = int((y2 - y1) / 2 * 0.96)
+            mask = np.zeros((H, W), dtype=np.uint8)
+            cv2.ellipse(mask, (cx, cy), (rx, ry), 0, 0, 360, 1, -1)
+
+        coverage = float(mask.sum()) / float(H * W)
+        print(f"[vision] Google Vision mask: label='{best.name}' "
+              f"score={best_score:.2f}, coverage={coverage:.3f}, "
+              f"center=({cx},{cy}), rx={rx}, ry={ry}")
+
+        if coverage < 0.10 or coverage > 0.85:
+            raise ValueError(f"Mask coverage {coverage:.2%} out of expected range")
+
+        return mask.astype(bool)
+
+    except Exception as e:
+        print(f"[vision] Google Vision detection failed ({e}), using center ellipse fallback")
+        mask = np.zeros((H, W), dtype=np.uint8)
+        cv2.ellipse(mask, (W // 2, H // 2), (int(W * 0.42), int(H * 0.42)), 0, 0, 360, 1, -1)
+        return mask.astype(bool)
+
+
+def _call_gemini_ingredients(client: genai.Client, image_path: str) -> list[dict]:
+    """Ask Gemini ONLY for ingredient identification. Dish boundary is handled by Vision API."""
     image = Image.open(image_path)
+    prompt = """Analyze this dish photo carefully.
+Identify every distinct ingredient or component visible:
+- The base (bread, dough, rice, pastry…) MUST be FIRST
+- Sauces, toppings, vegetables, meats, cheeses
+- Group similar things (e.g., all cheese → "mozzarella")
+- Return between 2 and 8 ingredients
+- For each, describe its color/appearance for OpenCV HSV detection
+- The pizza crust/border (the outer ring without toppings) is ALWAYS an ingredient called "crust". Include it even if it seems obvious. It will be used so every person gets a piece to hold.
 
-    prompt = """You are analyzing a food photo. Your task is to identify the dish boundary with PRECISION.
-
-CRITICAL RULES for the polygon:
-- Trace ONLY the outer edge of the food itself (pizza, cake, plate of food)
-- Do NOT include the table, background, cutting board, napkins, or anything that is not food
-- The polygon must fit INSIDE the food boundary, not outside it
-- If unsure, trace slightly smaller rather than larger
-- Use 30 points evenly spaced around the food edge
-- Coordinates are fractions: x = column/image_width, y = row/image_height, both in [0,1]
-- If the image has a clean/white background with the food on top, use that strong contrast to trace the true food edge precisely (including the crust/border)
-
-Also identify the ingredients visible in the dish.
-
-Return ONLY this JSON (no markdown, no explanation):
-{
-  "ingredients": [
-    {"name": "dough", "color_description": "pale yellow-beige base covering entire pizza"},
-    {"name": "tomato_sauce", "color_description": "bright red glossy patches"}
-  ],
-  "polygon": [[0.45, 0.08], [0.55, 0.09], ...]
-}
-
-The BASE ingredient (dough/bread/rice) MUST be first in the ingredients list.
-Return 2-8 ingredients total."""
-
+Return ONLY a valid JSON array, no markdown, no extra text:
+[
+  {"name": "dough", "color_description": "pale yellow-beige base"},
+  {"name": "tomato_sauce", "color_description": "bright red glossy patches"}
+]"""
     response = client.models.generate_content(
-        model="gemini-2.5-pro",
+        model="gemini-2.5-flash",
         contents=[image, prompt],
     )
     raw = response.text.strip()
@@ -88,37 +147,10 @@ Return 2-8 ingredients total."""
         if raw.startswith("json"):
             raw = raw[4:]
     raw = raw.strip()
-
-    data = json.loads(raw)
-    ingredients = data["ingredients"][:MAX_INGREDIENTS]
-    if len(ingredients) < MIN_INGREDIENTS:
+    ingredients = json.loads(raw)
+    if not isinstance(ingredients, list) or len(ingredients) < MIN_INGREDIENTS:
         raise ValueError(f"Gemini returned fewer than {MIN_INGREDIENTS} ingredients")
-
-    # Build dish mask from polygon
-    points = data["polygon"]
-    pts = np.array(
-        [[int(np.clip(p[0], 0, 1) * W), int(np.clip(p[1], 0, 1) * H)] for p in points],
-        dtype=np.int32,
-    )
-    dish_mask = np.zeros((H, W), dtype=np.uint8)
-    cv2.fillPoly(dish_mask, [pts], 1)
-
-    coverage = float(dish_mask.sum()) / float(H * W)
-
-    # Validation: polygon must cover a reasonable area
-    if coverage < 0.10:
-        raise ValueError(f"Polygon too small (coverage={coverage:.2%})")
-    if coverage > 0.75:
-        raise ValueError(f"Polygon covers almost full image (coverage={coverage:.2%}) — likely wrong")
-
-    # Smooth the mask edges with a small morphological close to eliminate jaggedness
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    dish_mask = cv2.morphologyEx(dish_mask, cv2.MORPH_CLOSE, kernel)
-
-    print(f"[vision] Gemini combined: {len(ingredients)} ingredients, "
-          f"polygon {len(pts)} pts, coverage={coverage:.3f}")
-
-    return ingredients, dish_mask.astype(bool)
+    return ingredients[:MAX_INGREDIENTS]
 
 
 def _fallback_dish_mask(H: int, W: int) -> np.ndarray:
@@ -322,8 +354,8 @@ def _normalize_map(ingredient_map: np.ndarray, dish_mask: np.ndarray) -> np.ndar
 def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
     """
     Segments a dish photo into per-pixel ingredient maps.
-    Single Gemini call gets both ingredients and dish boundary polygon.
-    No perspective correction — Gemini handles tilted photos directly.
+    Google Vision detects the dish boundary; Gemini identifies ingredients.
+    No perspective correction — detection handles tilted photos directly.
     """
     # 1. Load and resize
     img_bgr = cv2.imread(image_path)
@@ -338,32 +370,22 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
         img_bgr = cv2.resize(img_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
     H, W = img_bgr.shape[:2]
 
-    # Save resized image to a temp path so Gemini sees the same dimensions we work with
+    # Guardar imagen resizada en temp para Vision API
     import tempfile
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         tmp_path = tmp.name
         cv2.imwrite(tmp_path, img_bgr)
 
-    # 2. Single Gemini call: ingredients + polygon
-    client = _init_model()
-    try:
-        ingredients, dish_mask = _call_gemini_combined(client, tmp_path, H, W)
-    except Exception as e:
-        print(f"[vision] Combined Gemini call failed ({e}), trying separate calls")
-        # Retry with separate calls if combined fails
-        try:
-            ingredients, dish_mask = _call_gemini_combined(client, image_path, H, W)
-        except Exception as e2:
-            print(f"[vision] Second attempt also failed ({e2}), using fallback")
-            dish_mask = _fallback_dish_mask(H, W)
-            # Minimal default ingredients
-            ingredients = [
-                {"name": "dough", "color_description": "pale beige base"},
-                {"name": "tomato_sauce", "color_description": "red sauce"},
-                {"name": "cheese", "color_description": "white melted cheese"},
-            ]
+    # Detección de contorno: Google Vision (determinista, precisa)
+    dish_mask = _detect_dish_mask_vision_api(img_bgr, tmp_path)
 
-    dish_mask = _refine_dish_mask(img_bgr, dish_mask)
+    # Identificación de ingredientes: Gemini (semántica)
+    client = _init_model()
+    ingredients = _call_gemini_ingredients(client, tmp_path)
+    if not any("crust" in ing["name"].lower() for ing in ingredients):
+        ingredients.append({"name": "crust", "color_description": "golden brown outer ring, thick edge"})
+        if len(ingredients) > MAX_INGREDIENTS:
+            ingredients = ingredients[:MAX_INGREDIENTS]
 
     K = len(ingredients)
     ingredient_labels: dict[int, str] = {i: ing["name"] for i, ing in enumerate(ingredients)}
@@ -394,6 +416,27 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
             name = ingredient_labels.get(k, f"channel_{k}")
             print(f"[vision] Channel {k} ({name}): coverage={coverage:.1%}, mean={mean_val:.3f}")
 
+    # Crust geométrico: anillo exterior del dish_mask
+    # Independiente del color — el crust es siempre el borde exterior
+    crust_idx = next(
+        (k for k, name in ingredient_labels.items() if "crust" in name.lower()),
+        None
+    )
+    if crust_idx is not None:
+        # Erosionar la máscara del plato para obtener el interior
+        crust_width = max(8, int(min(H, W) * 0.04))  # ~4% del tamaño
+        kernel = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (crust_width * 2, crust_width * 2)
+        )
+        inner_mask = cv2.erode(
+            dish_mask.astype(np.uint8), kernel, iterations=1
+        ).astype(bool)
+        outer_ring = dish_mask & ~inner_mask  # píxeles del borde exterior
+        # Asignar densidad alta al crust solo en el anillo exterior
+        ingredient_map[:, :, crust_idx] = np.where(outer_ring, 1.0, 0.0)
+        print(f"[vision] Crust geométrico: {outer_ring.sum()} píxeles "
+              f"({outer_ring.sum()/dish_mask.sum():.1%} del plato)")
+
     ingredient_map[:, :, 0][dish_mask] = 1.0
     ingredient_map = _normalize_map(ingredient_map, dish_mask)
 
@@ -407,6 +450,9 @@ def segment_dish(image_path: str) -> tuple[np.ndarray, dict[int, str]]:
                     print(f"[vision] Channel {k} ({ingredient_labels[k]}) preserved as base "
                           f"(mean={mean_k:.4f} below threshold)")
                     continue
+                if "crust" in ingredient_labels[k].lower():
+                    print(f"[vision] Canal {k} ({ingredient_labels[k]}) preservado (crust): mean={mean_k:.4f}")
+                    continue  # nunca eliminar crust
                 to_drop.append(k)
                 print(f"[vision] Channel {k} ({ingredient_labels[k]}) dropped: "
                       f"mean={mean_k:.4f} < threshold")
