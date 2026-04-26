@@ -87,7 +87,11 @@ def _screen_preferences() -> None:
 
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.image(image_path, caption="Uploaded photo", use_container_width=True)
+        image_bytes: bytes | None = st.session_state.get("image_bytes")
+        if image_bytes:
+            st.image(image_bytes, caption="Uploaded photo", use_container_width=True)
+        else:
+            st.image(image_path, caption="Uploaded photo", use_container_width=True)
 
     with col2:
         mode_label = st.selectbox(
