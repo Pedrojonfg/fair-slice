@@ -36,10 +36,12 @@ MIN_CHANNEL_MEAN_COVERAGE = 0.008  # canales con media < esto sobre dish_mask se
 # ---------------------------------------------------------------------------
 
 def _init_model() -> genai.Client:
-    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=True)
     api_key = os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
-        raise EnvironmentError("GOOGLE_AI_API_KEY not set in .env")
+        load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+        api_key = os.environ.get("GOOGLE_AI_API_KEY")
+    if not api_key:
+        raise EnvironmentError("GOOGLE_AI_API_KEY not set")
     return genai.Client(api_key=api_key)
 
 
