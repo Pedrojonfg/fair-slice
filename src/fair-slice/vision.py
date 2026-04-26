@@ -49,8 +49,11 @@ def _init_model() -> genai.Client:
                 client = gsecretmanager.SecretManagerServiceClient()
                 name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
                 api_key = client.access_secret_version(name=name).payload.data.decode("utf-8").strip()
-            except Exception:
-                api_key = None
+            except Exception as e:
+                raise EnvironmentError(
+                    "GOOGLE_AI_API_KEY not set (and Secret Manager fallback failed: "
+                    f"{type(e).__name__}: {e})"
+                ) from e
         if not api_key:
             raise EnvironmentError("GOOGLE_AI_API_KEY not set")
     return genai.Client(api_key=api_key)
