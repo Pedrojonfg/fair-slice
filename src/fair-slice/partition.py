@@ -1257,74 +1257,100 @@ def _solve_radial(
     dy = ys - cy
     dx = xs - cx
     theta = np.arctan2(dy, dx)
-    theta_pos = np.where(theta < 0, theta + 2 * np.pi, theta)
+    theta_pos = np.where(theta < 0, theta + 2 * np.pi, theta).astype(np.float64, copy=False)
 
-    order = np.argsort(theta_pos)
-    theta_sorted = theta_pos[order]
-    w_sorted = w[order]
-    cum = np.cumsum(w_sorted)
-    total = float(cum[-1])
-
-    cut_angles = []
-    for i in range(1, n_people):
-        target = total * i / n_people
-        idx = int(np.searchsorted(cum, target))
-        idx = min(idx, len(theta_sorted) - 1)
-        cut_angles.append(theta_sorted[idx])
-    cut_angles = np.array(cut_angles, dtype=np.float64)
-
-    bounds = np.concatenate([[0.0], cut_angles, [2 * np.pi]])
-    theta_full = np.zeros((H, W), dtype=np.float64)
-    theta_full[ys, xs] = theta_pos
-
-    raw_masks = []
-    raw_seeds = np.zeros((n_people, 2), dtype=np.float64)
-    for i in range(n_people):
-        lo, hi = bounds[i], bounds[i + 1]
-        mask = domain & (theta_full >= lo) & (theta_full < hi)
-        if i == n_people - 1:
-            mask = domain & (theta_full >= lo)
-        raw_masks.append(mask)
-        ysm, xsm = np.where(mask)
-        if len(ysm) > 0:
-            mid_angle = 0.5 * (lo + hi)
-            r_mean = float(np.mean(np.sqrt((ysm - cy) ** 2 + (xsm - cx) ** 2)))
-            raw_seeds[i] = [cy + r_mean * np.sin(mid_angle), cx + r_mean * np.cos(mid_angle)]
-        else:
-            raw_seeds[i] = [cy, cx]
-
-    # Hungarian assignment of persons to sectors
-    T_total = ingredient_map.reshape(-1, K).sum(axis=0)
+    # Hungarian assignment cost weights (fixed across rotations)
     T_safe = np.where(T_total > 1e-12, T_total, 1.0)
     alpha = 1.0 / (T_safe ** 2)
     alpha[T_total <= 1e-12] = 0.0
     targets = T_total[None, :] * P_norm                          # (N, K)
 
-    sector_integrals = np.zeros((n_people, K), dtype=np.float64)
-    for c in range(n_people):
-        if raw_masks[c].any():
-            sector_integrals[c] = ingredient_map[raw_masks[c]].sum(axis=0)
+    def _radial_for_offset(offset_rad: float) -> tuple[list[np.ndarray], np.ndarray, float]:
+        """
+        Build radial sectors starting at `offset_rad` (in radians), assign persons to sectors,
+        and return (masks, seeds, fairness).
+        """
+        theta_shift = (theta_pos - offset_rad) % (2 * np.pi)
+        order = np.argsort(theta_shift)
+        theta_sorted = theta_shift[order]
+        w_sorted = w[order]
+        cum = np.cumsum(w_sorted)
+        total = float(cum[-1])
 
-    diff = sector_integrals[None, :, :] - targets[:, None, :]    # (N, N, K)
-    cost = (alpha[None, None, :] * diff ** 2).sum(axis=-1)       # (N, N)
-    _, col_ind = linear_sum_assignment(cost)
+        cut_angles = np.empty(n_people - 1, dtype=np.float64)
+        for i in range(1, n_people):
+            target = total * i / n_people
+            idx = int(np.searchsorted(cum, target))
+            idx = min(idx, len(theta_sorted) - 1)
+            cut_angles[i - 1] = theta_sorted[idx]
+        bounds = np.concatenate([[0.0], cut_angles, [2 * np.pi]])
 
-    masks = [raw_masks[col_ind[i]] for i in range(n_people)]
-    seeds = np.stack([raw_seeds[col_ind[i]] for i in range(n_people)])
+        # Sector id per domain pixel (vectorized, no HxW theta field needed)
+        sector_id = np.searchsorted(bounds, theta_shift, side="right") - 1
+        sector_id = np.clip(sector_id, 0, n_people - 1).astype(np.int32, copy=False)
 
-    scores = _compute_scores(masks, ingredient_map)
-    fairness = _compute_fairness(
-        scores,
-        P_norm,
-        active_channels,
-        ingredient_map,
-        domain,
-        n_ingredients=int(active_channels.sum()) if active_channels is not None else K,
-    )
+        raw_masks: list[np.ndarray] = []
+        raw_seeds = np.zeros((n_people, 2), dtype=np.float64)
+        for c in range(n_people):
+            m = np.zeros((H, W), dtype=bool)
+            sel = sector_id == c
+            if sel.any():
+                m[ys[sel], xs[sel]] = True
+            raw_masks.append(m)
 
-    return {
-        "masks": masks,
-        "scores": scores,
-        "fairness": fairness,
-        "seeds": seeds,
-    }
+            if sel.any():
+                lo, hi = float(bounds[c]), float(bounds[c + 1])
+                mid_angle = offset_rad + 0.5 * (lo + hi)
+                r_mean = float(np.mean(np.sqrt((ys[sel] - cy) ** 2 + (xs[sel] - cx) ** 2)))
+                raw_seeds[c] = [cy + r_mean * np.sin(mid_angle), cx + r_mean * np.cos(mid_angle)]
+            else:
+                raw_seeds[c] = [cy, cx]
+
+        # Hungarian assignment of persons to sectors (depends on integrals)
+        sector_integrals = np.zeros((n_people, K), dtype=np.float64)
+        for c in range(n_people):
+            if raw_masks[c].any():
+                sector_integrals[c] = ingredient_map[raw_masks[c]].sum(axis=0)
+
+        diff = sector_integrals[None, :, :] - targets[:, None, :]    # (N, N, K)
+        cost = (alpha[None, None, :] * diff ** 2).sum(axis=-1)       # (N, N)
+        _, col_ind = linear_sum_assignment(cost)
+
+        masks = [raw_masks[col_ind[i]] for i in range(n_people)]
+        seeds = np.stack([raw_seeds[col_ind[i]] for i in range(n_people)])
+
+        scores = _compute_scores(masks, ingredient_map)
+        fairness = _compute_fairness(
+            scores,
+            P_norm,
+            active_channels,
+            ingredient_map,
+            domain,
+            n_ingredients=int(active_channels.sum()) if active_channels is not None else K,
+        )
+        return masks, seeds, float(fairness)
+
+    best: dict | None = None
+    best_f = -np.inf
+    best_deg = 0
+
+    # Evaluate every degree (0..359). This is usually fast because most work is vectorized.
+    for deg in range(360):
+        offset = (deg * np.pi) / 180.0
+        masks, seeds, f = _radial_for_offset(offset)
+        if f > best_f:
+            best_f = f
+            best_deg = deg
+            scores = _compute_scores(masks, ingredient_map)
+            best = {
+                "masks": masks,
+                "scores": scores,
+                "fairness": float(f),
+                "seeds": seeds,
+                "radial_rotation_deg": int(deg),
+            }
+            if best_f >= 0.999:
+                break
+
+    assert best is not None
+    return best
