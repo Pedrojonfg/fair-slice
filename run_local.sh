@@ -28,19 +28,7 @@ python -m pip install -r requirements.txt
 # Ensure src modules import cleanly when launched from repo root
 export PYTHONPATH="${ROOT_DIR}/src/fair-slice:${PYTHONPATH:-}"
 
-APP_MODE="${APP_MODE:-streamlit}" # streamlit | api
-
-if [[ "$APP_MODE" == "streamlit" ]]; then
-  echo "[FairSlice] Launching Streamlit UI"
-  echo "[FairSlice] URL: http://localhost:8501"
-  exec streamlit run "src/fair-slice/app.py"
-elif [[ "$APP_MODE" == "api" ]]; then
-  PORT="${PORT:-8000}"
-  echo "[FairSlice] Launching FastAPI API"
-  echo "[FairSlice] URL: http://localhost:${PORT}"
-  exec uvicorn app.api:app --reload --port "$PORT"
-else
-  echo "Error: APP_MODE must be 'streamlit' or 'api' (got: ${APP_MODE})" >&2
-  exit 1
-fi
+echo "[FairSlice] Launching Streamlit UI"
+echo "[FairSlice] URL: http://localhost:8501"
+exec streamlit run "src/fair-slice/app.py"
 

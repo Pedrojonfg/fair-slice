@@ -2,16 +2,12 @@
 
 **FairSlice** is a web service that, from a photo of a dish (pizza, cake, paella...), tries to **identify ingredients** and calculate a **"fair" partition** for \(N\) people. It returns an image with colored areas (what each person gets) and distribution metrics.
 
-The repo can run as a **Streamlit app** (fast local UI) and as a **FastAPI API** (backend service).
+The repo runs as a **Streamlit app** (fast UI in pure Python).
 
 ---
 
 ## What it includes (high level)
 
-- **HTTP API (FastAPI)**: `app/api.py`
-  - `POST /api/slice`: complete pipeline (photo → vision → partition → render)
-  - `GET /health`: liveness
-  - `GET /`: static UI (if `app/static/` exists)
 - **Python Pipeline**: modules in `src/fair-slice/`
   - `vision.py`: ingredient segmentation (Vertex AI / Gemini + OpenCV)
   - `partition.py`: partitioning algorithm (modes `free` and `radial`)
@@ -40,12 +36,6 @@ chmod +x ./run_local.sh
 
 This will create a venv in `.venv/`, install dependencies, and start the Streamlit UI at `http://localhost:8501`.
 
-To run the API instead:
-
-```bash
-APP_MODE=api ./run_local.sh
-```
-
 ### Manual
 
 ```bash
@@ -69,35 +59,9 @@ GOOGLE_AI_API_KEY=YOUR_KEY_HERE
 ---
 
 ## Run locally
+The main entrypoint is the Streamlit UI:
 
-### API + UI
-
-```bash
-uvicorn app.api:app --reload --port 8000
-```
-
-- UI: `http://localhost:8000/`
-- Health: `http://localhost:8000/health`
-
-### Call the `/api/slice` endpoint
-
-Example with `curl` (multipart):
-
-```bash
-curl -sS -X POST "http://localhost:8000/api/slice" \
-  -F "image=@tests/fixtures/sample_images/pizza_test.jpg" \
-  -F "n_people=4" \
-  -F "mode=free"
-```
-
-Response (JSON):
-
-- `result_image`: PNG in base64
-- `fairness`: float in \([0,1]\)
-- `scores`: \(N \times K\) matrix with proportions per ingredient
-- `ingredient_labels`: channel → ingredient mapping
-
----
+- `http://localhost:8501`
 
 ## Run the pipeline as a script
 
@@ -152,7 +116,7 @@ By default, it looks for images in `tests/fixtures/real_images/` and writes outp
 
 ## Deployment (Google Cloud Run)
 
-The repo already includes `Procfile` with the startup command for the `PORT` port.
+The repo includes a `Procfile` with the startup command bound to the `PORT` port (Cloud Run compatible).
 
 Example (build from source, without manual Docker):
 
@@ -167,4 +131,4 @@ gcloud run deploy fairslice \
 Notes:
 
 - In Cloud Run, make sure the runtime has permissions for Vertex AI (service account with appropriate permissions).
-- If you don't configure credentials/permissions, the `/api/slice` endpoint will fail in the vision phase.
+- If you don't configure credentials/permissions, the vision phase will fail.

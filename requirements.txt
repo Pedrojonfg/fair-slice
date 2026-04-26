@@ -15,11 +15,6 @@ google-cloud-vision>=3.4.0         # Cloud Vision API (image labeling)
 google-auth>=2.23.0
 google-genai
 
-# --- Web Backend ---
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-python-multipart>=0.0.6            # for file uploads in FastAPI
-
 # --- Computer Vision ---
 opencv-python-headless>=4.8.0      # image processing, no GUI needed
 

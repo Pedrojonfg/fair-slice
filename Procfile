@@ -1,1 +1,1 @@
-web: uvicorn app.api:app --host 0.0.0.0 --port $PORT
+web: streamlit run src/fair-slice/app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true
