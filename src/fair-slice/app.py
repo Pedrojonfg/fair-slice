@@ -139,7 +139,7 @@ def _screen_result() -> None:
 
         ingredient_keys = _sorted_ingredient_keys(labels)
         for i in range(n_people):
-            with st.expander(f"Person {i + 1}", expanded=True):
+            with st.expander(f"Person {i + 1}", expanded=False):
                 for k in ingredient_keys:
                     name = labels[k]
                     received = float(scores[i, k])
