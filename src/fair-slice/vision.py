@@ -13,6 +13,7 @@ See README.md Section 2 for the full contract specification.
 import json
 import os
 import sys
+import urllib.request
 from pathlib import Path
 
 import cv2
@@ -37,9 +38,24 @@ MIN_CHANNEL_MEAN_COVERAGE = 0.008  # canales con media < esto sobre dish_mask se
 # Gemini helpers
 # ---------------------------------------------------------------------------
 
+def _get_gcp_project_id() -> str | None:
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+    if project_id:
+        return project_id
+    try:
+        req = urllib.request.Request(
+            "http://metadata.google.internal/computeMetadata/v1/project/project-id",
+            headers={"Metadata-Flavor": "Google"},
+        )
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.read().decode("utf-8").strip() or None
+    except Exception:
+        return None
+
+
 def _init_model() -> genai.Client:
     env_key = os.environ.get("GOOGLE_AI_API_KEY")
-    env_project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+    env_project = _get_gcp_project_id()
     print(
         "[fairslice] _init_model env "
         f"GOOGLE_AI_API_KEY={'set' if env_key else 'missing'}"
@@ -53,7 +69,7 @@ def _init_model() -> genai.Client:
         load_dotenv(Path(__file__).resolve().parents[2] / ".env")
         api_key = os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
-        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+        project_id = _get_gcp_project_id()
         secret_name = os.environ.get("GOOGLE_AI_API_KEY_SECRET", "google-ai-api-key")
         if project_id:
             try:
