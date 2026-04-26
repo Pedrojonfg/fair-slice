@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import io
 import tempfile
 from pathlib import Path
 
 import numpy as np
 import streamlit as st
+from PIL import Image
 
 from partition import _normalize_preferences, compute_partition
 from preferences_ui import build_preference_matrix, uniform_preferences
@@ -40,8 +42,22 @@ def _screen_upload() -> None:
     n_people = st.slider("How many people?", min_value=2, max_value=8, value=3)
 
     if uploaded and st.button("Analyse dish"):
-        suffix = Path(uploaded.name).suffix or ".png"
-        image_bytes = uploaded.getbuffer().tobytes()
+        raw_bytes = uploaded.getbuffer().tobytes()
+
+        # Normalize to PNG to avoid mobile codec issues (notably WEBP on older iOS/Safari).
+        try:
+            img = Image.open(io.BytesIO(raw_bytes))
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            image_bytes = buf.getvalue()
+            suffix = ".png"
+        except Exception:
+            # If PIL can't decode it, fall back to the original bytes as-is.
+            image_bytes = raw_bytes
+            suffix = Path(uploaded.name).suffix or ".png"
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
             f.write(image_bytes)
             image_path = f.name
