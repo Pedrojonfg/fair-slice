@@ -12,6 +12,7 @@ See README.md Section 2 for the full contract specification.
 
 import json
 import os
+import sys
 from pathlib import Path
 
 import cv2
@@ -37,6 +38,16 @@ MIN_CHANNEL_MEAN_COVERAGE = 0.008  # canales con media < esto sobre dish_mask se
 # ---------------------------------------------------------------------------
 
 def _init_model() -> genai.Client:
+    env_key = os.environ.get("GOOGLE_AI_API_KEY")
+    env_project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+    print(
+        "[fairslice] _init_model env "
+        f"GOOGLE_AI_API_KEY={'set' if env_key else 'missing'}"
+        + (f"(len={len(env_key)})" if env_key else "")
+        + f", GOOGLE_CLOUD_PROJECT={'set' if env_project else 'missing'}",
+        file=sys.stderr,
+        flush=True,
+    )
     api_key = os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
         load_dotenv(Path(__file__).resolve().parents[2] / ".env")
@@ -49,6 +60,12 @@ def _init_model() -> genai.Client:
                 client = gsecretmanager.SecretManagerServiceClient()
                 name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
                 api_key = client.access_secret_version(name=name).payload.data.decode("utf-8").strip()
+                print(
+                    "[fairslice] _init_model loaded key from Secret Manager "
+                    f"(secret={secret_name}, len={len(api_key)})",
+                    file=sys.stderr,
+                    flush=True,
+                )
             except Exception as e:
                 raise EnvironmentError(
                     "GOOGLE_AI_API_KEY not set (and Secret Manager fallback failed: "
