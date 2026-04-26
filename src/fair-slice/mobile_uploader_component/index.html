@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mobile uploader</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        color: #e8e8f0;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        border: 1px solid rgba(232, 232, 240, 0.25);
+        background: rgba(26, 26, 46, 0.55);
+        color: inherit;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn:active { transform: translateY(1px); }
+      .hint {
+        font-size: 12px;
+        opacity: 0.85;
+      }
+      .status {
+        font-size: 12px;
+        opacity: 0.9;
+        white-space: pre-wrap;
+      }
+      input[type="file"] {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="row">
+        <button id="pickBtn" class="btn" type="button">Choose / Take photo</button>
+        <span id="label" class="hint"></span>
+      </div>
+      <div id="status" class="status"></div>
+      <input id="fileInput" type="file" accept="image/*" />
+    </div>
+
+    <script>
+      // Minimal Streamlit component protocol (no build step).
+      function stPost(type, data) {
+        const msg = Object.assign(
+          { isStreamlitMessage: true, type: type },
+          data || {}
+        );
+        window.parent.postMessage(msg, "*");
+      }
+      function setHeight(px) {
+        stPost("streamlit:setFrameHeight", { height: px });
+      }
+      function setValue(value) {
+        stPost("streamlit:setComponentValue", { value: value });
+      }
+
+      const statusEl = document.getElementById("status");
+      const labelEl = document.getElementById("label");
+      const pickBtn = document.getElementById("pickBtn");
+      const fileInput = document.getElementById("fileInput");
+
+      let args = {
+        label: "Upload photo (optimized)",
+        maxEdge: 1600,
+        targetFormat: "image/jpeg",
+        quality: 0.82,
+        maxBytes: 8000000,
+      };
+
+      function humanBytes(n) {
+        const units = ["B", "KB", "MB", "GB"];
+        let x = n;
+        let i = 0;
+        while (x >= 1024 && i < units.length - 1) { x /= 1024; i++; }
+        return `${x.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+      }
+
+      async function blobToBase64(blob) {
+        const buf = await blob.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+      }
+
+      function imageFromFile(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+          img.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+          img.src = url;
+        });
+      }
+
+      function canvasToBlob(canvas, type, quality) {
+        return new Promise((resolve) => {
+          canvas.toBlob((b) => resolve(b), type, quality);
+        });
+      }
+
+      async function compressImage(file) {
+        const img = await imageFromFile(file);
+        const w0 = img.naturalWidth || img.width;
+        const h0 = img.naturalHeight || img.height;
+        const maxEdge = Math.max(1, Number(args.maxEdge || 1600));
+
+        const scale = Math.min(1.0, maxEdge / Math.max(w0, h0));
+        const w = Math.max(1, Math.round(w0 * scale));
+        const h = Math.max(1, Math.round(h0 * scale));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d", { alpha: false });
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const type = String(args.targetFormat || "image/jpeg");
+        let q = Math.max(0.4, Math.min(0.92, Number(args.quality || 0.82)));
+        let blob = await canvasToBlob(canvas, type, q);
+
+        const maxBytes = Math.max(250000, Number(args.maxBytes || 8000000));
+        // If still too big, step quality down until it fits.
+        while (blob && blob.size > maxBytes && q > 0.45) {
+          q = Math.max(0.45, q - 0.07);
+          blob = await canvasToBlob(canvas, type, q);
+        }
+        // Hard fallback: if still too big, downscale further.
+        let guard = 0;
+        while (blob && blob.size > maxBytes && guard < 5) {
+          guard++;
+          canvas.width = Math.max(1, Math.round(canvas.width * 0.82));
+          canvas.height = Math.max(1, Math.round(canvas.height * 0.82));
+          const ctx2 = canvas.getContext("2d", { alpha: false });
+          ctx2.drawImage(img, 0, 0, canvas.width, canvas.height);
+          blob = await canvasToBlob(canvas, type, q);
+        }
+
+        const b64 = await blobToBase64(blob);
+        return {
+          name: (file.name || "upload.jpg").replace(/\.(heic|heif)$/i, ".jpg"),
+          dataBase64: b64,
+          bytes: blob.size,
+          width: canvas.width,
+          height: canvas.height,
+          mime: type,
+          quality: q,
+        };
+      }
+
+      pickBtn.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", async (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        statusEl.textContent = `Original: ${file.name} (${humanBytes(file.size)})\nOptimizing...`;
+        try {
+          const out = await compressImage(file);
+          statusEl.textContent =
+            `Optimized: ${out.width}×${out.height}, ${humanBytes(out.bytes)} (${out.mime}, q=${out.quality.toFixed(2)})`;
+          setValue({ name: out.name, dataBase64: out.dataBase64, mime: out.mime });
+          setHeight(120);
+        } catch (e) {
+          statusEl.textContent = `Error optimizing image: ${e && e.message ? e.message : String(e)}`;
+          setHeight(140);
+        } finally {
+          // allow re-uploading the same file
+          fileInput.value = "";
+        }
+      });
+
+      // Streamlit lifecycle
+      window.addEventListener("message", (event) => {
+        const msg = event.data;
+        if (!msg || msg.type !== "streamlit:render") return;
+        if (msg.args) args = Object.assign(args, msg.args);
+        labelEl.textContent = String(args.label || "Upload photo (optimized)");
+        setHeight(120);
+      });
+
+      stPost("streamlit:componentReady", { apiVersion: 1 });
+      setHeight(120);
+    </script>
+  </body>
+</html>
+

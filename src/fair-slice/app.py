@@ -8,6 +8,7 @@ import numpy as np
 import streamlit as st
 from PIL import Image
 
+from mobile_uploader import mobile_image_uploader
 from partition import _normalize_preferences, compute_partition
 from preferences_ui import build_preference_matrix, uniform_preferences
 from vision import segment_dish
@@ -111,11 +112,40 @@ def _screen_upload() -> None:
     st.title("🍕 FairSlice")
     st.subheader("Fair splitting for any dish")
 
-    uploaded = st.file_uploader("Upload a photo of the dish", type=["jpg", "jpeg", "png", "webp"])
+    st.caption(
+        "Mobile-friendly uploader: your photo is resized/compressed on-device before upload, "
+        "so even very large originals won’t fail."
+    )
+    optimized = mobile_image_uploader(
+        "Upload photo (auto-optimized for reliability)",
+        max_edge=1600,
+        target_format="image/jpeg",
+        quality=0.82,
+        max_bytes=8_000_000,
+        key="mobile_uploader_main",
+    )
+
+    with st.expander("Alternative upload methods", expanded=False):
+        camera = st.camera_input("Take a photo")
+        uploaded = st.file_uploader(
+            "Upload a photo (JPG/PNG/WEBP)",
+            type=["jpg", "jpeg", "png", "webp"],
+        )
     n_people = st.slider("How many people?", min_value=2, max_value=8, value=3)
 
-    if uploaded and st.button("Analyse dish"):
-        raw_bytes = uploaded.getbuffer().tobytes()
+    image_bytes: bytes | None = None
+    suffix = ".jpg"
+    if optimized is not None:
+        image_bytes, name = optimized
+        suffix = Path(name).suffix or ".jpg"
+    else:
+        chosen = camera or uploaded
+        if chosen is not None:
+            image_bytes = chosen.getbuffer().tobytes()
+            suffix = Path(getattr(chosen, "name", "")).suffix or ".png"
+
+    if image_bytes and st.button("Analyse dish"):
+        raw_bytes = image_bytes
 
         # Normalize to PNG to avoid mobile codec issues (notably WEBP on older iOS/Safari).
         try:
@@ -129,7 +159,7 @@ def _screen_upload() -> None:
         except Exception:
             # If PIL can't decode it, fall back to the original bytes as-is.
             image_bytes = raw_bytes
-            suffix = Path(uploaded.name).suffix or ".png"
+            suffix = suffix or ".png"
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
             f.write(image_bytes)
