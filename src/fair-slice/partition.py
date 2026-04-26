@@ -109,7 +109,24 @@ def compute_partition(
     if mode == "radial":
         return _solve_radial(ingredient_map, n_people, P_norm)
     elif mode == "free":
-        return _solve_power_diagram(ingredient_map, n_people, P_norm)
+        result_free = _solve_power_diagram(ingredient_map, n_people, P_norm)
+        result_radial = _solve_radial(ingredient_map, n_people, P_norm)
+
+        if result_radial["fairness"] > result_free["fairness"]:
+            print(
+                f"[partition] Radial wins: "
+                f"{result_radial['fairness']:.3f} > {result_free['fairness']:.3f}"
+            )
+            result_free = result_radial
+            result_free["mode_used"] = "radial"
+        else:
+            print(
+                f"[partition] Free wins: "
+                f"{result_free['fairness']:.3f} >= {result_radial['fairness']:.3f}"
+            )
+            result_free["mode_used"] = "free"
+
+        return result_free
     else:
         raise ValueError(f"Unknown mode: {mode!r}. Use 'free' or 'radial'.")
 
@@ -1188,7 +1205,20 @@ def _compute_fairness(
     if n_ingredients is not None and n_ingredients >= 2:
         complexity_factor = 1.0 / math.log2(n_ingredients + 1)
         raw_fairness = float(np.clip(1.0 - (1.0 - raw_fairness) * complexity_factor, 0.0, 1.0))
-    return raw_fairness
+    result = raw_fairness
+    # Rawlsian component: penaliza si alguien lo pasa muy mal
+    # Fairness rawlsiana = fairness de la persona que peor está
+    rawls_fairness = float(np.min([
+        np.clip(1.0 - np.max(np.abs(scores[i, active] - P_norm[i, active])) /
+                np.maximum(P_norm[i, active], 1e-9).max(), 0.0, 1.0)
+        for i in range(scores.shape[0])
+    ]))
+
+    # Blend: 70% utilitarista (lo que ya tienes), 30% rawlsiano
+    RAWLS_WEIGHT = 0.30
+    result = (1 - RAWLS_WEIGHT) * result + RAWLS_WEIGHT * rawls_fairness
+    result = float(np.clip(result, 0.0, 1.0))
+    return result
 
 
 # ===========================================================================
