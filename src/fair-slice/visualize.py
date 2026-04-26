@@ -287,14 +287,25 @@ def render_overlay(image_path: str, masks: list[np.ndarray], n_people: int) -> I
 
     # Dibujar números centrados en cada región
     draw = ImageDraw.Draw(result)
-    font = _load_font(56)
+    # Slightly bigger, image-relative numbers for readability.
+    # 56px on a ~700px-wide image is ~8%; bump to ~9% while clamping extremes.
+    font_size = int(np.clip(round(min(W, H) * 0.09), 44, 96))
+    font = _load_font(font_size)
     for i, m in enumerate(aligned_masks):
         ys, xs = np.where(m)
         if len(ys) == 0:
             continue
         cy, cx = int(ys.mean()), int(xs.mean())
         text = str(i + 1)
-        draw.text((cx, cy), text, fill=(255, 255, 255, 255), anchor="mm", font=font)
+        draw.text(
+            (cx, cy),
+            text,
+            fill=(255, 255, 255, 255),
+            anchor="mm",
+            font=font,
+            stroke_width=max(2, font_size // 18),
+            stroke_fill=(0, 0, 0, 255),
+        )
 
     return result.convert("RGB")
 
