@@ -12,6 +12,12 @@ from vision import segment_dish
 from visualize import render_overlay
 
 
+def _inject_design_tokens() -> None:
+    css_path = Path(__file__).with_name("styles.css")
+    if css_path.exists():
+        st.markdown(f"<style>{css_path.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+
+
 def _init_state() -> None:
     if "page" not in st.session_state:
         st.session_state.page = "upload"  # upload | prefs | result
@@ -160,6 +166,8 @@ def _screen_result() -> None:
 
 
 def main() -> None:
+    st.set_page_config(page_title="FairSlice", page_icon="🍕", layout="centered")
+    _inject_design_tokens()
     _init_state()
 
     page = st.session_state.page
