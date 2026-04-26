@@ -150,3 +150,34 @@ footer {
   visibility: hidden;
 }
 
+/* Always show full images (never crop) */
+div[data-testid="stImage"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible !important;
+}
+
+div[data-testid="stImage"] img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 78vh !important;
+  object-fit: contain !important;
+}
+
+/* Hard guarantee for our embedded images */
+.fs-image-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fs-image {
+  width: 100%;
+  height: auto;
+  max-height: 78vh;
+  object-fit: contain;
+  border-radius: calc(var(--radius) - 4px);
+}
+

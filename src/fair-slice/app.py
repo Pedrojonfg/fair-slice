@@ -14,6 +14,79 @@ from vision import segment_dish
 from visualize import render_overlay
 
 
+def _to_png_bytes(data: object) -> bytes | None:
+    """
+    Convert common image representations into PNG bytes.
+    Returns None if conversion fails.
+    """
+    try:
+        if data is None:
+            return None
+        if isinstance(data, (bytes, bytearray)):
+            # Assume it's already encoded image bytes.
+            return bytes(data)
+        if isinstance(data, str) and data:
+            img = Image.open(data)
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            return buf.getvalue()
+        if isinstance(data, Image.Image):
+            img = data
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGB")
+            buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            return buf.getvalue()
+        if isinstance(data, np.ndarray):
+            arr = data
+            if arr.dtype != np.uint8:
+                arr = np.clip(arr, 0, 255).astype(np.uint8)
+            img = Image.fromarray(arr)
+            buf = io.BytesIO()
+            img.save(buf, format="PNG", optimize=True)
+            return buf.getvalue()
+    except Exception:
+        return None
+    return None
+
+
+def _placeholder_png_bytes(message: str = "Image unavailable") -> bytes:
+    w, h = 1400, 900
+    img = Image.new("RGB", (w, h), color=(20, 20, 35))
+    try:
+        from PIL import ImageDraw
+
+        draw = ImageDraw.Draw(img)
+        draw.rectangle((0, 0, w - 1, h - 1), outline=(80, 80, 120), width=6)
+        draw.text((60, 60), message, fill=(232, 232, 240))
+    except Exception:
+        pass
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+def _render_image_always(png_bytes: bytes | None, alt: str = "image") -> None:
+    """
+    Render an image in a way that cannot break as an external src.
+    We embed the bytes as a data: URL to avoid Streamlit media endpoint issues.
+    """
+    import base64
+
+    b = png_bytes if png_bytes else _placeholder_png_bytes()
+    b64 = base64.b64encode(b).decode("ascii")
+    st.markdown(
+        f"""
+        <div class="fs-image-wrap">
+          <img class="fs-image" alt="{alt}" src="data:image/png;base64,{b64}" />
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _inject_design_tokens() -> None:
     css_path = Path(__file__).with_name("styles.css")
     if css_path.exists():
@@ -104,10 +177,8 @@ def _screen_preferences() -> None:
     col1, col2 = st.columns([1, 1])
     with col1:
         image_bytes: bytes | None = st.session_state.get("image_bytes")
-        if image_bytes:
-            st.image(image_bytes, caption="Uploaded photo", use_container_width=True)
-        else:
-            st.image(image_path, caption="Uploaded photo", use_container_width=True)
+        png = _to_png_bytes(image_bytes) or _to_png_bytes(image_path)
+        _render_image_always(png, alt="Uploaded photo")
 
     with col2:
         mode_label = st.selectbox(
@@ -180,7 +251,8 @@ def _screen_result() -> None:
         result["masks"] = [m & dish_mask for m in result["masks"]]
         masks = result["masks"]
         overlay = render_overlay(image_path, masks, n_people)
-        st.image(np.asarray(overlay, dtype=np.uint8), caption="Proposed split", use_container_width=True)
+        overlay_png = _to_png_bytes(overlay) or _to_png_bytes(np.asarray(overlay, dtype=np.uint8))
+        _render_image_always(overlay_png, alt="Proposed split")
 
     with col2:
         st.metric("Fairness Score", f"{fairness * 100:.0f}%")
@@ -208,7 +280,7 @@ def _screen_result() -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="FairSlice", page_icon="🍕", layout="centered")
+    st.set_page_config(page_title="FairSlice", page_icon="🍕", layout="wide")
     _inject_design_tokens()
     _init_state()
 
