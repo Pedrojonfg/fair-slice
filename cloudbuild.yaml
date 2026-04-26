@@ -1,0 +1,25 @@
+substitutions:
+  _SERVICE: fairslice
+  _REGION: us-central1
+  _PROJECT_ID: fairslice-pedro
+  _RUNTIME_SA: fairslice-runner@fairslice-pedro.iam.gserviceaccount.com
+  _AI_SECRET_NAME: google-ai-api-key
+
+steps:
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        gcloud run deploy "${_SERVICE}" \
+          --project "${_PROJECT_ID}" \
+          --region "${_REGION}" \
+          --source . \
+          --clear-base-image \
+          --allow-unauthenticated \
+          --service-account "${_RUNTIME_SA}" \
+          --set-env-vars "GOOGLE_CLOUD_PROJECT=${_PROJECT_ID},GOOGLE_CLOUD_LOCATION=${_REGION}" \
+          --set-secrets "GOOGLE_AI_API_KEY=${_AI_SECRET_NAME}:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
