@@ -41,14 +41,16 @@ def _screen_upload() -> None:
 
     if uploaded and st.button("Analyse dish"):
         suffix = Path(uploaded.name).suffix or ".png"
+        image_bytes = uploaded.getbuffer().tobytes()
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as f:
-            f.write(uploaded.getbuffer())
+            f.write(image_bytes)
             image_path = f.name
 
         with st.spinner("Identifying ingredients..."):
             ingredient_map, labels = segment_dish(image_path)
 
         st.session_state.image_path = image_path
+        st.session_state.image_bytes = image_bytes
         st.session_state.ingredient_map = ingredient_map
         st.session_state.labels = labels
         st.session_state.n_people = int(n_people)
@@ -56,8 +58,28 @@ def _screen_upload() -> None:
         st.rerun()
 
 
-def _screen_preferences() -> None:
+def _ensure_image_path() -> str:
+    """
+    Streamlit reruns + long computations can make temp file paths unreliable.
+    Keep original bytes and recreate the temp file if missing.
+    """
     image_path: str = st.session_state.image_path
+    if Path(image_path).exists():
+        return image_path
+
+    image_bytes: bytes | None = st.session_state.get("image_bytes")
+    if not image_bytes:
+        return image_path
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as f:
+        f.write(image_bytes)
+        image_path = f.name
+    st.session_state.image_path = image_path
+    return image_path
+
+
+def _screen_preferences() -> None:
+    image_path: str = _ensure_image_path()
     labels: dict[int, str] = st.session_state.labels
     n_people: int = int(st.session_state.n_people)
 
@@ -119,7 +141,7 @@ def _screen_preferences() -> None:
 
 
 def _screen_result() -> None:
-    image_path: str = st.session_state.image_path
+    image_path: str = _ensure_image_path()
     labels: dict[int, str] = st.session_state.labels
     n_people: int = int(st.session_state.n_people)
 
@@ -138,7 +160,7 @@ def _screen_result() -> None:
         result["masks"] = [m & dish_mask for m in result["masks"]]
         masks = result["masks"]
         overlay = render_overlay(image_path, masks, n_people)
-        st.image(overlay, caption="Proposed split", use_container_width=True)
+        st.image(np.asarray(overlay, dtype=np.uint8), caption="Proposed split", use_container_width=True)
 
     with col2:
         st.metric("Fairness Score", f"{fairness * 100:.0f}%")
