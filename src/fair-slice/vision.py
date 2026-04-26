@@ -17,6 +17,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from google import genai
+from google.cloud import secretmanager as gsecretmanager
 from google.cloud import vision as gvision
 from dotenv import load_dotenv
 from PIL import Image
@@ -41,7 +42,17 @@ def _init_model() -> genai.Client:
         load_dotenv(Path(__file__).resolve().parents[2] / ".env")
         api_key = os.environ.get("GOOGLE_AI_API_KEY")
     if not api_key:
-        raise EnvironmentError("GOOGLE_AI_API_KEY not set")
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+        secret_name = os.environ.get("GOOGLE_AI_API_KEY_SECRET", "google-ai-api-key")
+        if project_id:
+            try:
+                client = gsecretmanager.SecretManagerServiceClient()
+                name = f"projects/{project_id}/secrets/{secret_name}/versions/latest"
+                api_key = client.access_secret_version(name=name).payload.data.decode("utf-8").strip()
+            except Exception:
+                api_key = None
+        if not api_key:
+            raise EnvironmentError("GOOGLE_AI_API_KEY not set")
     return genai.Client(api_key=api_key)
 
 
