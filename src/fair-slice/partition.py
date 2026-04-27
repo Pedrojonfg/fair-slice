@@ -928,7 +928,8 @@ def _phase_joint(
             coords, densities, p, w, targets, alpha, dt_outside, shape_hw,
             eps_p=eps_p,
         )
-        p_new = p - eta_p * grad_p
+        # More aggressive exploration for generator positions (keep weight LR unchanged).
+        p_new = p - (eta_p * 5.0) * grad_p
         w_new = w - eta_w * grad_w
         p_new = _hard_project_to_domain(p_new, domain_full)
         L_new, _ = _eval_loss(coords, densities, p_new, w_new, targets, alpha, dt_outside, shape_hw)
@@ -943,7 +944,7 @@ def _phase_joint(
                 eta_p *= _LR_GROWTH
                 eta_w *= _LR_GROWTH
                 consecutive_improvements = 0
-            if rel_change < _REL_TOL:
+            if it >= 10 and rel_change < _REL_TOL:
                 break
         else:
             eta_p *= _LR_DECAY

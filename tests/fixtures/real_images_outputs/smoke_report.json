@@ -16,45 +16,72 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_3.jpg"
       },
       "vision": {
-        "runtime_s": 4.876237745997059,
+        "runtime_s": 20.63812851700004,
         "imap_shape": [
           500,
           500,
-          3
+          6
         ],
         "labels": {
-          "0": "pizza_dough",
-          "1": "tomato_sauce",
-          "2": "cherry_tomatoes"
+          "0": "dough",
+          "1": "crust",
+          "2": "tomato_sauce",
+          "3": "mozzarella_cheese",
+          "4": "cherry_tomatoes",
+          "5": "ham"
         }
       },
       "dish": {
-        "dish_pixels": 125629,
-        "dish_pixel_fraction": 0.502516
+        "dish_pixels": 133713,
+        "dish_pixel_fraction": 0.534852
       },
       "channels": [
         {
           "k": 0,
-          "name": "pizza_dough",
+          "name": "dough",
           "coverage": 1.0,
-          "mean": 0.6957084536552429,
+          "mean": 0.5029233694076538,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 1,
-          "name": "tomato_sauce",
-          "coverage": 0.5605314059651832,
-          "mean": 0.15214580297470093,
+          "name": "crust",
+          "coverage": 0.185150284564702,
+          "mean": 0.05489234998822212,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 2,
-          "name": "cherry_tomatoes",
-          "coverage": 0.5605314059651832,
-          "mean": 0.15214580297470093,
+          "name": "tomato_sauce",
+          "coverage": 0.4911489533553207,
+          "mean": 0.12119226157665253,
           "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 3,
+          "name": "mozzarella_cheese",
+          "coverage": 0.6155871156880782,
+          "mean": 0.18763163685798645,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 4,
+          "name": "cherry_tomatoes",
+          "coverage": 0.4911489533553207,
+          "mean": 0.12119226157665253,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 5,
+          "name": "ham",
+          "coverage": 0.04418418553169849,
+          "mean": 0.012168125249445438,
+          "low_coverage": true,
           "active": true
         }
       ],
@@ -62,57 +89,93 @@
         "N=3_uniform": {
           "N": 3,
           "tag": "uniform",
-          "runtime_s": 8.822157751001214,
-          "fairness": 0.8263568431138992,
-          "fairness_complexity_adjusted": 0.9131784215569496,
-          "fairness_relative": 0.8594526648521423,
-          "fairness_relative_active": 0.7189053595066071,
+          "runtime_s": 32.32567651999989,
+          "fairness": 0.7392557233572006,
+          "fairness_complexity_adjusted": 0.8296447263677745,
+          "fairness_relative": 0.9750036469194567,
+          "fairness_relative_active": 0.9298263683269969,
           "scores": [
             [
-              0.37651973962783813,
-              0.3709279000759125,
-              0.3709279000759125
+              0.3451317846775055,
+              0.32873639464378357,
+              0.34350016713142395,
+              0.2899926006793976,
+              0.34350016713142395,
+              0.3325786292552948
             ],
             [
-              0.40591955184936523,
-              0.3784133791923523,
-              0.3784133791923523
+              0.3331637978553772,
+              0.35481691360473633,
+              0.32170042395591736,
+              0.3511427640914917,
+              0.32170042395591736,
+              0.20037338137626648
             ],
             [
-              0.2175712287425995,
-              0.2506670653820038,
-              0.2506670653820038
+              0.3216947317123413,
+              0.31644508242607117,
+              0.33479514718055725,
+              0.3588651120662689,
+              0.33479514718055725,
+              0.4670483469963074
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
+            "dough",
+            "crust",
             "tomato_sauce",
-            "cherry_tomatoes"
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "ham"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev_uniform": 0.11576210459073383,
-              "max_abs_dev_target": 0.11576210459073383,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.011798451344172178,
+              "max_abs_dev_target": 0.011798451344172178,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev_uniform": 0.08266626795132953,
-              "max_abs_dev_target": 0.08266626795132953,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.021483580271403013,
+              "max_abs_dev_target": 0.021483580271403013,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "2": {
-              "name": "cherry_tomatoes",
-              "max_abs_dev_uniform": 0.08266626795132953,
-              "max_abs_dev_target": 0.08266626795132953,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.011632909377415956,
+              "max_abs_dev_target": 0.011632909377415956,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.04334073265393573,
+              "max_abs_dev_target": 0.04334073265393573,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "4": {
+              "name": "cherry_tomatoes",
+              "max_abs_dev_uniform": 0.011632909377415956,
+              "max_abs_dev_target": 0.011632909377415956,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "5": {
+              "name": "ham",
+              "max_abs_dev_uniform": 0.13371501366297406,
+              "max_abs_dev_target": 0.13371501366297406,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
             }
           },
           "preferences": null,
@@ -123,62 +186,101 @@
         "N=4_uniform": {
           "N": 4,
           "tag": "uniform",
-          "runtime_s": 14.237863602000289,
-          "fairness": 0.8164943854014078,
-          "fairness_complexity_adjusted": 0.9082471927007039,
-          "fairness_relative": 0.772626260916392,
-          "fairness_relative_active": 0.5452525218327839,
+          "runtime_s": 38.87603384099975,
+          "fairness": 0.7735056559244791,
+          "fairness_complexity_adjusted": 0.8372999069329492,
+          "fairness_relative": 0.9577263991658004,
+          "fairness_relative_active": 0.8813229986250113,
           "scores": [
             [
-              0.1841978132724762,
-              0.24549727141857147,
-              0.24549727141857147
+              0.2604099214076996,
+              0.2584746479988098,
+              0.2690311670303345,
+              0.2018951028585434,
+              0.2690311670303345,
+              0.1438307762145996
             ],
             [
-              0.31578329205513,
-              0.30041736364364624,
-              0.30041736364364624
+              0.2515934705734253,
+              0.26916247606277466,
+              0.22834071516990662,
+              0.27436384558677673,
+              0.22834071516990662,
+              0.15306702256202698
             ],
             [
-              0.29799214005470276,
-              0.34171634912490845,
-              0.34171634912490845
+              0.24123148620128632,
+              0.23825405538082123,
+              0.24404484033584595,
+              0.278229683637619,
+              0.24404484033584595,
+              0.34848418831825256
             ],
             [
-              0.20202547311782837,
-              0.11237078905105591,
-              0.11237078905105591
+              0.2467489093542099,
+              0.2341088354587555,
+              0.2585713267326355,
+              0.24551263451576233,
+              0.2585713267326355,
+              0.35461756587028503
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
+            "dough",
+            "crust",
             "tomato_sauce",
-            "cherry_tomatoes"
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "ham"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev_uniform": 0.0658021867275238,
-              "max_abs_dev_target": 0.0658021867275238,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.010409921407699585,
+              "max_abs_dev_target": 0.010409921407699585,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev_uniform": 0.1376292109489441,
-              "max_abs_dev_target": 0.1376292109489441,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.019162476062774658,
+              "max_abs_dev_target": 0.019162476062774658,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "2": {
-              "name": "cherry_tomatoes",
-              "max_abs_dev_uniform": 0.1376292109489441,
-              "max_abs_dev_target": 0.1376292109489441,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.021659284830093384,
+              "max_abs_dev_target": 0.021659284830093384,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.048104897141456604,
+              "max_abs_dev_target": 0.048104897141456604,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "4": {
+              "name": "cherry_tomatoes",
+              "max_abs_dev_uniform": 0.021659284830093384,
+              "max_abs_dev_target": 0.021659284830093384,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "5": {
+              "name": "ham",
+              "max_abs_dev_uniform": 0.10616922378540039,
+              "max_abs_dev_target": 0.10616922378540039,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
             }
           },
           "preferences": null,
@@ -189,72 +291,117 @@
         "N=6_uniform": {
           "N": 6,
           "tag": "uniform",
-          "runtime_s": 29.084058329997788,
-          "fairness": 0.8788181960582733,
-          "fairness_complexity_adjusted": 0.9394090980291366,
-          "fairness_relative": 0.7297420650720596,
-          "fairness_relative_active": 0.4594841400782268,
+          "runtime_s": 55.25657787800037,
+          "fairness": 0.7042766818404197,
+          "fairness_complexity_adjusted": 0.764853583106326,
+          "fairness_relative": 0.9244035402323626,
+          "fairness_relative_active": 0.787773922832946,
           "scores": [
             [
-              0.17728379368782043,
-              0.1574842780828476,
-              0.1574842780828476
+              0.15920864045619965,
+              0.16199631989002228,
+              0.15797977149486542,
+              0.1971239447593689,
+              0.15797977149486542,
+              0.19967958331108093
             ],
             [
-              0.13875849545001984,
-              0.16992810368537903,
-              0.16992810368537903
+              0.16909916698932648,
+              0.1755661517381668,
+              0.15446758270263672,
+              0.17586961388587952,
+              0.15446758270263672,
+              0.12681333720684052
             ],
             [
-              0.12114632874727249,
-              0.17512360215187073,
-              0.17512360215187073
+              0.17349405586719513,
+              0.16956879198551178,
+              0.1832614541053772,
+              0.12872038781642914,
+              0.1832614541053772,
+              0.12623542547225952
             ],
             [
-              0.1816723644733429,
-              0.21079705655574799,
-              0.21079705655574799
+              0.16145426034927368,
+              0.15187951922416687,
+              0.1873176097869873,
+              0.1535254269838333,
+              0.1873176097869873,
+              0.2396329939365387
             ],
             [
-              0.23495492339134216,
-              0.22097717225551605,
-              0.22097717225551605
+              0.16285806894302368,
+              0.15658985078334808,
+              0.17123542726039886,
+              0.16834360361099243,
+              0.17123542726039886,
+              0.25298771262168884
             ],
             [
-              0.14617785811424255,
-              0.0656818300485611,
-              0.0656818300485611
+              0.17388543486595154,
+              0.18439948558807373,
+              0.14573562145233154,
+              0.17641595005989075,
+              0.14573562145233154,
+              0.054650258272886276
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
+            "dough",
+            "crust",
             "tomato_sauce",
-            "cherry_tomatoes"
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "ham"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev_uniform": 0.0682882567246755,
-              "max_abs_dev_target": 0.0682882567246755,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.007458026210467011,
+              "max_abs_dev_target": 0.007458026210467011,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.16666666666666669
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev_uniform": 0.10098483661810556,
-              "max_abs_dev_target": 0.10098483661810556,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.017732818921407073,
+              "max_abs_dev_target": 0.017732818921407073,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.16666666666666669
             },
             "2": {
-              "name": "cherry_tomatoes",
-              "max_abs_dev_uniform": 0.10098483661810556,
-              "max_abs_dev_target": 0.10098483661810556,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.020931045214335114,
+              "max_abs_dev_target": 0.020931045214335114,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.16666666666666669
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.03794627885023752,
+              "max_abs_dev_target": 0.03794627885023752,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.16666666666666669
+            },
+            "4": {
+              "name": "cherry_tomatoes",
+              "max_abs_dev_uniform": 0.020931045214335114,
+              "max_abs_dev_target": 0.020931045214335114,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.16666666666666669
+            },
+            "5": {
+              "name": "ham",
+              "max_abs_dev_uniform": 0.11201640839378038,
+              "max_abs_dev_target": 0.11201640839378038,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.16666666666666669
             }
           },
           "preferences": null,
@@ -265,94 +412,151 @@
         "N=5_complex_prefs": {
           "N": 5,
           "tag": "complex_prefs",
-          "runtime_s": 20.9936746530002,
-          "fairness": 0.35482704845490787,
-          "fairness_complexity_adjusted": 0.6774135242274539,
-          "fairness_relative": 0.7376208876570065,
-          "fairness_relative_active": 0.4752417802810669,
+          "runtime_s": 41.535400006000145,
+          "fairness": 0.22319031818810486,
+          "fairness_complexity_adjusted": 0.5586666895077438,
+          "fairness_relative": 0.9434701023261975,
+          "fairness_relative_active": 0.8413005038720363,
           "scores": [
             [
-              0.26888391375541687,
-              0.31183287501335144,
-              0.31183287501335144
+              0.19162094593048096,
+              0.18759776651859283,
+              0.19264687597751617,
+              0.23138949275016785,
+              0.19264687597751617,
+              0.2649633586406708
             ],
             [
-              0.14814256131649017,
-              0.0770144909620285,
-              0.0770144909620285
+              0.20599046349525452,
+              0.1897304505109787,
+              0.20492593944072723,
+              0.17916041612625122,
+              0.20492593944072723,
+              0.22225745022296906
             ],
             [
-              0.22624528408050537,
-              0.27927878499031067,
-              0.27927878499031067
+              0.19411137700080872,
+              0.19129765033721924,
+              0.22589343786239624,
+              0.17980660498142242,
+              0.22589343786239624,
+              0.27780264616012573
             ],
             [
-              0.20363382995128632,
-              0.15551181137561798,
-              0.15551181137561798
+              0.20872390270233154,
+              0.21297822892665863,
+              0.17432531714439392,
+              0.21036295592784882,
+              0.17432531714439392,
+              0.13216102123260498
             ],
             [
-              0.15308764576911926,
-              0.17636258900165558,
-              0.17636258900165558
+              0.1995534747838974,
+              0.21839562058448792,
+              0.20220789313316345,
+              0.19928038120269775,
+              0.20220789313316345,
+              0.10281537473201752
             ]
           ],
           "ingredient_columns": [
-            "pizza_dough",
+            "dough",
+            "crust",
             "tomato_sauce",
-            "cherry_tomatoes"
+            "mozzarella_cheese",
+            "cherry_tomatoes",
+            "ham"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza_dough",
-              "max_abs_dev_uniform": 0.06888391375541686,
-              "max_abs_dev_target": 0.37026218738450734,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.008723902702331532,
+              "max_abs_dev_target": 0.11478745479169217,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "1": {
-              "name": "tomato_sauce",
-              "max_abs_dev_uniform": 0.12298550903797151,
-              "max_abs_dev_target": 0.4282236952277245,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.018395620584487904,
+              "max_abs_dev_target": 0.5464089616775512,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
             },
             "2": {
-              "name": "cherry_tomatoes",
-              "max_abs_dev_uniform": 0.12298550903797151,
-              "max_abs_dev_target": 0.34186610048136945,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.02589343786239623,
+              "max_abs_dev_target": 0.13420291831343673,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.16666666666666666
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.031389492750167836,
+              "max_abs_dev_target": 0.22215754570207308,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "4": {
+              "name": "cherry_tomatoes",
+              "max_abs_dev_uniform": 0.02589343786239623,
+              "max_abs_dev_target": 0.16657376685860603,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
+            },
+            "5": {
+              "name": "ham",
+              "max_abs_dev_uniform": 0.0971846252679825,
+              "max_abs_dev_target": 0.10369692830794236,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.16666666666666666
             }
           },
           "preferences": [
             [
-              1.1257681846618652,
-              7.966451644897461,
-              1.5396479368209839
+              1.2579594850540161,
+              12.482439041137695,
+              0.9425017237663269,
+              3.747652053833008,
+              3.576019525527954,
+              1.398781180381775
             ],
             [
-              0.49069032073020935,
-              0.040449585765600204,
-              0.8145420551300049
+              0.5347450375556946,
+              0.03251582011580467,
+              2.3310089111328125,
+              0.1557239443063736,
+              0.6430017948150635,
+              1.1857330799102783
             ],
             [
-              0.39348089694976807,
-              0.5344940423965454,
-              9.549057960510254
+              1.3630180358886719,
+              0.6283586025238037,
+              2.613049030303955,
+              1.111836314201355,
+              3.5947048664093018,
+              2.2783663272857666
             ],
             [
-              2.877420663833618,
-              1.3981348276138306,
-              0.15441571176052094
+              0.7485051155090332,
+              2.2306675910949707,
+              1.133514404296875,
+              1.549778938293457,
+              0.6721730828285217,
+              0.5174766182899475
             ],
             [
-              0.1264761984348297,
-              0.8251221776008606,
-              3.3156545162200928
+              0.5082786083221436,
+              1.631910800933838,
+              3.5588717460632324,
+              1.6979930400848389,
+              1.4690395593643188,
+              0.5917761325836182
             ]
           ],
           "flags": {
@@ -367,53 +571,80 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_4.jpg"
       },
       "vision": {
-        "runtime_s": 7.273184592002508,
+        "runtime_s": 28.140039207999507,
         "imap_shape": [
           472,
           500,
-          4
+          7
         ],
         "labels": {
           "0": "dough",
-          "1": "salami_or_pepperoni",
-          "2": "sliced_tomatoes",
-          "3": "bell_peppers"
+          "1": "crust",
+          "2": "melted_cheese",
+          "3": "sliced_tomatoes",
+          "4": "salami_or_sausage",
+          "5": "yellow_bell_peppers",
+          "6": "fresh_basil"
         }
       },
       "dish": {
-        "dish_pixels": 82433,
-        "dish_pixel_fraction": 0.34929237288135595
+        "dish_pixels": 79297,
+        "dish_pixel_fraction": 0.3360042372881356
       },
       "channels": [
         {
           "k": 0,
           "name": "dough",
           "coverage": 1.0,
-          "mean": 0.5449731349945068,
+          "mean": 0.5155916213989258,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 1,
-          "name": "salami_or_pepperoni",
-          "coverage": 0.23739279172176192,
-          "mean": 0.05506279319524765,
+          "name": "crust",
+          "coverage": 0.2143965093256996,
+          "mean": 0.08522835373878479,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 2,
-          "name": "sliced_tomatoes",
-          "coverage": 0.7779893974500504,
-          "mean": 0.19998203217983246,
+          "name": "melted_cheese",
+          "coverage": 0.19099083193563438,
+          "mean": 0.0514378696680069,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 3,
-          "name": "bell_peppers",
-          "coverage": 0.7779893974500504,
-          "mean": 0.19998203217983246,
+          "name": "sliced_tomatoes",
+          "coverage": 0.7375688865909177,
+          "mean": 0.245504692196846,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 4,
+          "name": "salami_or_sausage",
+          "coverage": 0.3007806096069208,
+          "mean": 0.07339626550674438,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 5,
+          "name": "yellow_bell_peppers",
+          "coverage": 0.055550651348726936,
+          "mean": 0.014420590363442898,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 6,
+          "name": "fresh_basil",
+          "coverage": 0.055550651348726936,
+          "mean": 0.014420590363442898,
           "low_coverage": false,
           "active": true
         }
@@ -422,69 +653,105 @@
         "N=3_uniform": {
           "N": 3,
           "tag": "uniform",
-          "runtime_s": 6.158269053998083,
-          "fairness": 0.8130178824067116,
-          "fairness_complexity_adjusted": 0.9194711851736481,
-          "fairness_relative": 0.9041233978651647,
-          "fairness_relative_active": 0.7773814536631107,
+          "runtime_s": 24.901088671000252,
+          "fairness": 0.5925700716674328,
+          "fairness_complexity_adjusted": 0.738826969017585,
+          "fairness_relative": 0.9288455841028113,
+          "fairness_relative_active": 0.7865367407418926,
           "scores": [
             [
-              0.40191322565078735,
-              0.3004608154296875,
-              0.3632279634475708,
-              0.3632279634475708
+              0.33777931332588196,
+              0.33293962478637695,
+              0.44023993611335754,
+              0.31858667731285095,
+              0.2809920310974121,
+              0.32290998101234436,
+              0.32290998101234436
             ],
             [
-              0.3894047439098358,
-              0.3521713614463806,
-              0.37308651208877563,
-              0.37308651208877563
+              0.3159099817276001,
+              0.3223823308944702,
+              0.12439490854740143,
+              0.37525367736816406,
+              0.516136109828949,
+              0.22806069254875183,
+              0.22806069254875183
             ],
             [
-              0.20867858827114105,
-              0.3473697900772095,
-              0.26368460059165955,
-              0.26368460059165955
+              0.3463105857372284,
+              0.3446770906448364,
+              0.43536460399627686,
+              0.3061574101448059,
+              0.2028735876083374,
+              0.4490281939506531,
+              0.4490281939506531
             ]
           ],
           "ingredient_columns": [
             "dough",
-            "salami_or_pepperoni",
+            "crust",
+            "melted_cheese",
             "sliced_tomatoes",
-            "bell_peppers"
+            "salami_or_sausage",
+            "yellow_bell_peppers",
+            "fresh_basil"
           ],
           "ingredient_fairness_deviation": {
             "0": {
               "name": "dough",
-              "max_abs_dev_uniform": 0.12465474506219226,
-              "max_abs_dev_target": 0.12465474506219226,
+              "max_abs_dev_uniform": 0.017423351605733217,
+              "max_abs_dev_target": 0.017423351605733217,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "1": {
-              "name": "salami_or_pepperoni",
-              "max_abs_dev_uniform": 0.032872517903645815,
-              "max_abs_dev_target": 0.032872517903645815,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.011343757311503111,
+              "max_abs_dev_target": 0.011343757311503111,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "2": {
-              "name": "sliced_tomatoes",
-              "max_abs_dev_uniform": 0.06964873274167377,
-              "max_abs_dev_target": 0.06964873274167377,
+              "name": "melted_cheese",
+              "max_abs_dev_uniform": 0.2089384247859319,
+              "max_abs_dev_target": 0.2089384247859319,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "3": {
-              "name": "bell_peppers",
-              "max_abs_dev_uniform": 0.06964873274167377,
-              "max_abs_dev_target": 0.06964873274167377,
+              "name": "sliced_tomatoes",
+              "max_abs_dev_uniform": 0.04192034403483075,
+              "max_abs_dev_target": 0.04192034403483075,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
+            },
+            "4": {
+              "name": "salami_or_sausage",
+              "max_abs_dev_uniform": 0.18280277649561566,
+              "max_abs_dev_target": 0.18280277649561566,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "5": {
+              "name": "yellow_bell_peppers",
+              "max_abs_dev_uniform": 0.11569486061731976,
+              "max_abs_dev_target": 0.11569486061731976,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "6": {
+              "name": "fresh_basil",
+              "max_abs_dev_uniform": 0.11569486061731976,
+              "max_abs_dev_target": 0.11569486061731976,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
             }
           },
           "preferences": null,
@@ -495,75 +762,114 @@
         "N=4_uniform": {
           "N": 4,
           "tag": "uniform",
-          "runtime_s": 8.559300898999936,
-          "fairness": 0.863836387793223,
-          "fairness_complexity_adjusted": 0.941357524159945,
-          "fairness_relative": 0.8474179281419156,
-          "fairness_relative_active": 0.6457154005765915,
+          "runtime_s": 28.502906634000283,
+          "fairness": 0.5633699417114257,
+          "fairness_complexity_adjusted": 0.6907203753789266,
+          "fairness_relative": 0.901982887074419,
+          "fairness_relative_active": 0.7059486569657825,
           "scores": [
             [
-              0.2908005118370056,
-              0.2679537236690521,
-              0.31515735387802124,
-              0.31515735387802124
+              0.23825842142105103,
+              0.23409627377986908,
+              0.08358164131641388,
+              0.27306944131851196,
+              0.3567817807197571,
+              0.3354683816432953,
+              0.3354683816432953
             ],
             [
-              0.3250405192375183,
-              0.2548133432865143,
-              0.294877290725708,
-              0.294877290725708
+              0.2326144129037857,
+              0.2653728127479553,
+              0.14424079656600952,
+              0.2710006535053253,
+              0.32889509201049805,
+              0.32435402274131775,
+              0.32435402274131775
             ],
             [
-              0.1693335920572281,
-              0.29660651087760925,
-              0.24208448827266693,
-              0.24208448827266693
+              0.2538200318813324,
+              0.2520923614501953,
+              0.3175067901611328,
+              0.24808219075202942,
+              0.2087513953447342,
+              0.1767338365316391,
+              0.1767338365316391
             ],
             [
-              0.21482235193252563,
-              0.1806272268295288,
-              0.1478772908449173,
-              0.1478772908449173
+              0.27530646324157715,
+              0.2484385222196579,
+              0.45467033982276917,
+              0.2078472226858139,
+              0.10557054728269577,
+              0.16344259679317474,
+              0.16344259679317474
             ]
           ],
           "ingredient_columns": [
             "dough",
-            "salami_or_pepperoni",
+            "crust",
+            "melted_cheese",
             "sliced_tomatoes",
-            "bell_peppers"
+            "salami_or_sausage",
+            "yellow_bell_peppers",
+            "fresh_basil"
           ],
           "ingredient_fairness_deviation": {
             "0": {
               "name": "dough",
-              "max_abs_dev_uniform": 0.08066640794277191,
-              "max_abs_dev_target": 0.08066640794277191,
+              "max_abs_dev_uniform": 0.02530646324157715,
+              "max_abs_dev_target": 0.02530646324157715,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "1": {
-              "name": "salami_or_pepperoni",
-              "max_abs_dev_uniform": 0.06937277317047119,
-              "max_abs_dev_target": 0.06937277317047119,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.01590372622013092,
+              "max_abs_dev_target": 0.01590372622013092,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "2": {
-              "name": "sliced_tomatoes",
-              "max_abs_dev_uniform": 0.1021227091550827,
-              "max_abs_dev_target": 0.1021227091550827,
+              "name": "melted_cheese",
+              "max_abs_dev_uniform": 0.20467033982276917,
+              "max_abs_dev_target": 0.20467033982276917,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "3": {
-              "name": "bell_peppers",
-              "max_abs_dev_uniform": 0.1021227091550827,
-              "max_abs_dev_target": 0.1021227091550827,
+              "name": "sliced_tomatoes",
+              "max_abs_dev_uniform": 0.042152777314186096,
+              "max_abs_dev_target": 0.042152777314186096,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
+            },
+            "4": {
+              "name": "salami_or_sausage",
+              "max_abs_dev_uniform": 0.14442945271730423,
+              "max_abs_dev_target": 0.14442945271730423,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "5": {
+              "name": "yellow_bell_peppers",
+              "max_abs_dev_uniform": 0.08655740320682526,
+              "max_abs_dev_target": 0.08655740320682526,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "6": {
+              "name": "fresh_basil",
+              "max_abs_dev_uniform": 0.08655740320682526,
+              "max_abs_dev_target": 0.08655740320682526,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
             }
           },
           "preferences": null,
@@ -574,87 +880,132 @@
         "N=6_uniform": {
           "N": 6,
           "tag": "uniform",
-          "runtime_s": 19.988135821997275,
-          "fairness": 0.9213002622127533,
-          "fairness_complexity_adjusted": 0.96610586780851,
-          "fairness_relative": 0.8652077477413992,
-          "fairness_relative_active": 0.6870220825076103,
+          "runtime_s": 61.08029425899986,
+          "fairness": 0.5339054524898529,
+          "fairness_complexity_adjusted": 0.6446351508299509,
+          "fairness_relative": 0.8177617007777804,
+          "fairness_relative_active": 0.4532850980758666,
           "scores": [
             [
-              0.11974622309207916,
-              0.20958943665027618,
-              0.1397990733385086,
-              0.1397990733385086
+              0.18639549612998962,
+              0.16596142947673798,
+              0.28653886914253235,
+              0.13601000607013702,
+              0.08078685402870178,
+              0.08170593529939651,
+              0.08170593529939651
             ],
             [
-              0.19755591452121735,
-              0.1537475883960724,
-              0.19512175023555756,
-              0.19512175023555756
+              0.1638464480638504,
+              0.1523967832326889,
+              0.05914945900440216,
+              0.1797221451997757,
+              0.2333364337682724,
+              0.17013594508171082,
+              0.17013594508171082
             ],
             [
-              0.12336447089910507,
-              0.18211892247200012,
-              0.12275722622871399,
-              0.12275722622871399
+              0.15963181853294373,
+              0.16861988604068756,
+              0.130066379904747,
+              0.17125850915908813,
+              0.16416439414024353,
+              0.3191455006599426,
+              0.3191455006599426
             ],
             [
-              0.1604829877614975,
-              0.23224978148937225,
-              0.18065787851810455,
-              0.18065787851810455
+              0.17593710124492645,
+              0.16573995351791382,
+              0.28561434149742126,
+              0.15281088650226593,
+              0.12160941958427429,
+              0.024066634476184845,
+              0.024066634476184845
             ],
             [
-              0.22191661596298218,
-              0.11389634013175964,
-              0.1706910878419876,
-              0.1706910878419876
+              0.15334025025367737,
+              0.16961753368377686,
+              0.05980728939175606,
+              0.19495894014835358,
+              0.2866398096084595,
+              0.04054673761129379,
+              0.04054673761129379
             ],
             [
-              0.17693452537059784,
-              0.10839655995368958,
-              0.19097231328487396,
-              0.19097231328487396
+              0.16084912419319153,
+              0.17766371369361877,
+              0.17882457375526428,
+              0.1652390956878662,
+              0.11346308887004852,
+              0.3643982708454132,
+              0.3643982708454132
             ]
           ],
           "ingredient_columns": [
             "dough",
-            "salami_or_pepperoni",
+            "crust",
+            "melted_cheese",
             "sliced_tomatoes",
-            "bell_peppers"
+            "salami_or_sausage",
+            "yellow_bell_peppers",
+            "fresh_basil"
           ],
           "ingredient_fairness_deviation": {
             "0": {
               "name": "dough",
-              "max_abs_dev_uniform": 0.05524994929631552,
-              "max_abs_dev_target": 0.05524994929631552,
+              "max_abs_dev_uniform": 0.019728829463322967,
+              "max_abs_dev_target": 0.019728829463322967,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "1": {
-              "name": "salami_or_pepperoni",
-              "max_abs_dev_uniform": 0.0655831148227056,
-              "max_abs_dev_target": 0.0655831148227056,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.014269883433977754,
+              "max_abs_dev_target": 0.014269883433977754,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "2": {
-              "name": "sliced_tomatoes",
-              "max_abs_dev_uniform": 0.04390944043795267,
-              "max_abs_dev_target": 0.04390944043795267,
+              "name": "melted_cheese",
+              "max_abs_dev_uniform": 0.11987220247586569,
+              "max_abs_dev_target": 0.11987220247586569,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "3": {
-              "name": "bell_peppers",
-              "max_abs_dev_uniform": 0.04390944043795267,
-              "max_abs_dev_target": 0.04390944043795267,
+              "name": "sliced_tomatoes",
+              "max_abs_dev_uniform": 0.030656660596529633,
+              "max_abs_dev_target": 0.030656660596529633,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
+            },
+            "4": {
+              "name": "salami_or_sausage",
+              "max_abs_dev_uniform": 0.11997314294179282,
+              "max_abs_dev_target": 0.11997314294179282,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "5": {
+              "name": "yellow_bell_peppers",
+              "max_abs_dev_uniform": 0.19773160417874655,
+              "max_abs_dev_target": 0.19773160417874655,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "6": {
+              "name": "fresh_basil",
+              "max_abs_dev_uniform": 0.19773160417874655,
+              "max_abs_dev_target": 0.19773160417874655,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
             }
           },
           "preferences": null,
@@ -665,113 +1016,170 @@
         "N=5_complex_prefs": {
           "N": 5,
           "tag": "complex_prefs",
-          "runtime_s": 14.211663226000383,
-          "fairness": 0.3146594836746306,
-          "fairness_complexity_adjusted": 0.7048399053207479,
-          "fairness_relative": 0.8048356317254057,
-          "fairness_relative_active": 0.5468423776328564,
+          "runtime_s": 50.68324722000034,
+          "fairness": 0.2428267804437939,
+          "fairness_complexity_adjusted": 0.5961742829033567,
+          "fairness_relative": 0.8574317244743284,
+          "fairness_relative_active": 0.5722951663275657,
           "scores": [
             [
-              0.1857248693704605,
-              0.3615540862083435,
-              0.24195806682109833,
-              0.24195806682109833
+              0.20882810652256012,
+              0.20961129665374756,
+              0.2360990047454834,
+              0.18065381050109863,
+              0.11077810823917389,
+              0.34094879031181335,
+              0.34094879031181335
             ],
             [
-              0.11705692112445831,
-              0.17670077085494995,
-              0.14098553359508514,
-              0.14098553359508514
+              0.20138585567474365,
+              0.19596606492996216,
+              0.24529002606868744,
+              0.18987298011779785,
+              0.17801210284233093,
+              0.24836552143096924,
+              0.24836552143096924
             ],
             [
-              0.20696662366390228,
-              0.1595696657896042,
-              0.1933569759130478,
-              0.1933569759130478
+              0.21062561869621277,
+              0.20190410315990448,
+              0.36972740292549133,
+              0.177264004945755,
+              0.13567332923412323,
+              0.05922190472483635,
+              0.05922190472483635
             ],
             [
-              0.2628300189971924,
-              0.15545889735221863,
-              0.2484963983297348,
-              0.2484963983297348
+              0.18576472997665405,
+              0.20693457126617432,
+              0.07366318255662918,
+              0.23412799835205078,
+              0.3040560483932495,
+              0.10381736606359482,
+              0.10381736606359482
             ],
             [
-              0.22742067277431488,
-              0.14671598374843597,
-              0.1752026230096817,
-              0.1752026230096817
+              0.19339588284492493,
+              0.18558409810066223,
+              0.07522127777338028,
+              0.2180803269147873,
+              0.2714802622795105,
+              0.24764561653137207,
+              0.24764561653137207
             ]
           ],
           "ingredient_columns": [
             "dough",
-            "salami_or_pepperoni",
+            "crust",
+            "melted_cheese",
             "sliced_tomatoes",
-            "bell_peppers"
+            "salami_or_sausage",
+            "yellow_bell_peppers",
+            "fresh_basil"
           ],
           "ingredient_fairness_deviation": {
             "0": {
               "name": "dough",
-              "max_abs_dev_uniform": 0.0829430788755417,
-              "max_abs_dev_target": 0.13338361116213004,
+              "max_abs_dev_uniform": 0.014235270023345958,
+              "max_abs_dev_target": 0.1269308106842495,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "1": {
-              "name": "salami_or_pepperoni",
-              "max_abs_dev_uniform": 0.1615540862083435,
-              "max_abs_dev_target": 0.3142222932188464,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.01441590189933778,
+              "max_abs_dev_target": 0.6536019628996623,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "2": {
-              "name": "sliced_tomatoes",
-              "max_abs_dev_uniform": 0.05901446640491487,
-              "max_abs_dev_target": 0.20485324809780875,
+              "name": "melted_cheese",
+              "max_abs_dev_uniform": 0.16972740292549132,
+              "max_abs_dev_target": 0.22326424166395842,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
             },
             "3": {
-              "name": "bell_peppers",
-              "max_abs_dev_uniform": 0.05901446640491487,
-              "max_abs_dev_target": 0.5412347593896021,
+              "name": "sliced_tomatoes",
+              "max_abs_dev_uniform": 0.03412799835205077,
+              "max_abs_dev_target": 0.5722738226172153,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.25
+              "ingredient_importance": 0.14285714285714285
+            },
+            "4": {
+              "name": "salami_or_sausage",
+              "max_abs_dev_uniform": 0.1040560483932495,
+              "max_abs_dev_target": 0.13601050247109195,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "5": {
+              "name": "yellow_bell_peppers",
+              "max_abs_dev_uniform": 0.14094879031181334,
+              "max_abs_dev_target": 0.1748721464070296,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
+            },
+            "6": {
+              "name": "fresh_basil",
+              "max_abs_dev_uniform": 0.14094879031181334,
+              "max_abs_dev_target": 0.14759044220204026,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.14285714285714285
             }
           },
           "preferences": [
             [
-              0.23830436170101166,
-              11.746803283691406,
-              0.5732277035713196,
-              0.5180686116218567
+              0.6453210115432739,
+              27.68647003173828,
+              5.468116283416748,
+              1.0022821426391602,
+              0.1891433298587799,
+              1.6870594024658203,
+              0.531917929649353
             ],
             [
-              0.7414828538894653,
-              0.013024297542870045,
-              0.8129534125328064,
-              5.44313383102417
+              1.963016152381897,
+              0.0560908205807209,
+              0.47116175293922424,
+              1.1652435064315796,
+              0.5723520517349243,
+              1.1130619049072266,
+              0.7698059678077698
             ],
             [
-              1.074428915977478,
-              2.4332048892974854,
-              2.9651424884796143,
-              1.4136574268341064
+              2.2038557529449463,
+              1.7519404888153076,
+              11.047389030456543,
+              1.5176186561584473,
+              0.19021734595298767,
+              1.5418366193771362,
+              0.5250706076622009
             ],
             [
-              1.2638441324234009,
-              2.009331703186035,
-              2.3252995014190674,
-              28.911266326904297
+              1.396738886833191,
+              1.4278085231781006,
+              3.3672757148742676,
+              17.545833587646484,
+              0.35926949977874756,
+              0.8184746503829956,
+              0.3013480305671692
             ],
             [
-              1.2348368167877197,
-              1.1803139448165894,
-              4.093094348907471,
-              0.32287174463272095
+              1.670705795288086,
+              1.151421308517456,
+              1.0374294519424438,
+              0.5271991491317749,
+              0.8269470930099487,
+              1.4259655475616455,
+              0.4107320308685303
             ]
           ],
           "flags": {
@@ -786,44 +1194,62 @@
         "path": "/home/pedrojon/fair-slice/tests/fixtures/real_images/pizza_1.jpg"
       },
       "vision": {
-        "runtime_s": 6.890160769999056,
+        "runtime_s": 14.828305017000275,
         "imap_shape": [
           500,
-          440,
-          3
+          500,
+          5
         ],
         "labels": {
-          "0": "pizza dough",
-          "1": "tomato sauce",
-          "2": "pepperoni"
+          "0": "dough",
+          "1": "crust",
+          "2": "tomato_sauce",
+          "3": "mozzarella_cheese",
+          "4": "pepperoni"
         }
       },
       "dish": {
-        "dish_pixels": 83457,
-        "dish_pixel_fraction": 0.37935
+        "dish_pixels": 111487,
+        "dish_pixel_fraction": 0.445948
       },
       "channels": [
         {
           "k": 0,
-          "name": "pizza dough",
+          "name": "dough",
           "coverage": 1.0,
-          "mean": 0.6556875109672546,
+          "mean": 0.5593705177307129,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 1,
-          "name": "tomato sauce",
-          "coverage": 0.7361036222246187,
-          "mean": 0.23103530704975128,
+          "name": "crust",
+          "coverage": 0.2016916770565178,
+          "mean": 0.0830199271440506,
           "low_coverage": false,
           "active": true
         },
         {
           "k": 2,
+          "name": "tomato_sauce",
+          "coverage": 0.6287011041646111,
+          "mean": 0.18505749106407166,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 3,
+          "name": "mozzarella_cheese",
+          "coverage": 0.2803376178388512,
+          "mean": 0.08440360426902771,
+          "low_coverage": false,
+          "active": true
+        },
+        {
+          "k": 4,
           "name": "pepperoni",
-          "coverage": 0.4264231879890243,
-          "mean": 0.11327721178531647,
+          "coverage": 0.33092647573259665,
+          "mean": 0.08814844489097595,
           "low_coverage": false,
           "active": true
         }
@@ -832,57 +1258,81 @@
         "N=3_uniform": {
           "N": 3,
           "tag": "uniform",
-          "runtime_s": 5.964353209001274,
-          "fairness": 0.8605276048183441,
-          "fairness_complexity_adjusted": 0.9302638024091721,
-          "fairness_relative": 0.8883034437894821,
-          "fairness_relative_active": 0.7766068776448567,
+          "runtime_s": 24.003780670000197,
+          "fairness": 0.7997219242155551,
+          "fairness_complexity_adjusted": 0.8658449687984705,
+          "fairness_relative": 0.9460343165918905,
+          "fairness_relative_active": 0.8605007320642472,
           "scores": [
             [
-              0.3214312791824341,
-              0.37150388956069946,
-              0.3141186237335205
+              0.3244558572769165,
+              0.3281668722629547,
+              0.35520315170288086,
+              0.355358362197876,
+              0.32752320170402527
             ],
             [
-              0.2614839971065521,
-              0.24035173654556274,
-              0.3058907091617584
+              0.3454209566116333,
+              0.3405703604221344,
+              0.2888455092906952,
+              0.41402921080589294,
+              0.265936940908432
             ],
             [
-              0.417088121175766,
-              0.3881472945213318,
-              0.3799900710582733
+              0.33013084530830383,
+              0.33126530051231384,
+              0.3559536933898926,
+              0.23062662780284882,
+              0.40654996037483215
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
+            "dough",
+            "crust",
+            "tomato_sauce",
+            "mozzarella_cheese",
             "pepperoni"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev_uniform": 0.08375478784243268,
-              "max_abs_dev_target": 0.08375478784243268,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.012087623278299986,
+              "max_abs_dev_target": 0.012087623278299986,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev_uniform": 0.09298159678777057,
-              "max_abs_dev_target": 0.09298159678777057,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.007237027088801085,
+              "max_abs_dev_target": 0.007237027088801085,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
             },
             "2": {
-              "name": "pepperoni",
-              "max_abs_dev_uniform": 0.04665673772494,
-              "max_abs_dev_target": 0.04665673772494,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.044487824042638124,
+              "max_abs_dev_target": 0.044487824042638124,
               "ideal": 0.3333333333333333,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.1027067055304845,
+              "max_abs_dev_target": 0.1027067055304845,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.2
+            },
+            "4": {
+              "name": "pepperoni",
+              "max_abs_dev_uniform": 0.07321662704149884,
+              "max_abs_dev_target": 0.07321662704149884,
+              "ideal": 0.3333333333333333,
+              "active": true,
+              "ingredient_importance": 0.2
             }
           },
           "preferences": null,
@@ -893,62 +1343,88 @@
         "N=4_uniform": {
           "N": 4,
           "tag": "uniform",
-          "runtime_s": 9.616466493000189,
-          "fairness": 0.8765404025713602,
-          "fairness_complexity_adjusted": 0.9382702012856801,
-          "fairness_relative": 0.8797523379325867,
-          "fairness_relative_active": 0.7595046758651733,
+          "runtime_s": 30.234505970999635,
+          "fairness": 0.7744873046874999,
+          "fairness_complexity_adjusted": 0.8349815129654262,
+          "fairness_relative": 0.9285066616868551,
+          "fairness_relative_active": 0.8151924014091493,
           "scores": [
             [
-              0.25583964586257935,
-              0.23478150367736816,
-              0.2165350466966629
+              0.2494058907032013,
+              0.24510425329208374,
+              0.26968926191329956,
+              0.16754096746444702,
+              0.295943021774292
             ],
             [
-              0.27609172463417053,
-              0.2689509689807892,
-              0.30706194043159485
+              0.2425108104944229,
+              0.24734285473823547,
+              0.2931356430053711,
+              0.14509283006191254,
+              0.3099645674228668
             ],
             [
-              0.3106609880924225,
-              0.27698200941085815,
-              0.2812023460865021
+              0.2482195496559143,
+              0.24687130749225616,
+              0.2403302788734436,
+              0.3316705524921417,
+              0.20638303458690643
             ],
             [
-              0.1574053019285202,
-              0.21928514540195465,
-              0.19520065188407898
+              0.25986960530281067,
+              0.2606841027736664,
+              0.1968485713005066,
+              0.3557090759277344,
+              0.18772061169147491
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
+            "dough",
+            "crust",
+            "tomato_sauce",
+            "mozzarella_cheese",
             "pepperoni"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev_uniform": 0.0925946980714798,
-              "max_abs_dev_target": 0.0925946980714798,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.009869605302810669,
+              "max_abs_dev_target": 0.009869605302810669,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev_uniform": 0.03071485459804535,
-              "max_abs_dev_target": 0.03071485459804535,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.010684102773666382,
+              "max_abs_dev_target": 0.010684102773666382,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
             },
             "2": {
-              "name": "pepperoni",
-              "max_abs_dev_uniform": 0.05706194043159485,
-              "max_abs_dev_target": 0.05706194043159485,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.05315142869949341,
+              "max_abs_dev_target": 0.05315142869949341,
               "ideal": 0.25,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.10570907592773438,
+              "max_abs_dev_target": 0.10570907592773438,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.2
+            },
+            "4": {
+              "name": "pepperoni",
+              "max_abs_dev_uniform": 0.062279388308525085,
+              "max_abs_dev_target": 0.062279388308525085,
+              "ideal": 0.25,
+              "active": true,
+              "ingredient_importance": 0.2
             }
           },
           "preferences": null,
@@ -959,72 +1435,102 @@
         "N=6_uniform": {
           "N": 6,
           "tag": "uniform",
-          "runtime_s": 19.17744233600024,
-          "fairness": 0.9309967160224915,
-          "fairness_complexity_adjusted": 0.9654983580112457,
-          "fairness_relative": 0.8478957340121269,
-          "fairness_relative_active": 0.6957914779583614,
+          "runtime_s": 43.645296394999605,
+          "fairness": 0.6957370591163634,
+          "fairness_complexity_adjusted": 0.7550964125917066,
+          "fairness_relative": 0.8898244062024101,
+          "fairness_relative_active": 0.7152001917362213,
           "scores": [
             [
-              0.1770048588514328,
-              0.1660669445991516,
-              0.18881215155124664
+              0.16424883902072906,
+              0.16935691237449646,
+              0.17794598639011383,
+              0.1469055563211441,
+              0.1747133880853653
             ],
             [
-              0.13595476746559143,
-              0.18573786318302155,
-              0.17327266931533813
+              0.18353016674518585,
+              0.1769029051065445,
+              0.13713547587394714,
+              0.14028021693229675,
+              0.13727359473705292
             ],
             [
-              0.16111108660697937,
-              0.14313805103302002,
-              0.12469089031219482
+              0.15662354230880737,
+              0.16285543143749237,
+              0.1977672278881073,
+              0.12729065120220184,
+              0.2063916176557541
             ],
             [
-              0.1806362271308899,
-              0.1911935657262802,
-              0.21671685576438904
+              0.17066796123981476,
+              0.1646188497543335,
+              0.14576996862888336,
+              0.24742557108402252,
+              0.10974564403295517
             ],
             [
-              0.22416940331459045,
-              0.18546168506145477,
-              0.18617947399616241
+              0.15948891639709473,
+              0.16268280148506165,
+              0.1496453583240509,
+              0.2819177806377411,
+              0.1413423717021942
             ],
             [
-              0.12112519145011902,
-              0.12840186059474945,
-              0.11032994836568832
+              0.1654478758573532,
+              0.16358524560928345,
+              0.19173754751682281,
+              0.05619464069604874,
+              0.2305484265089035
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
+            "dough",
+            "crust",
+            "tomato_sauce",
+            "mozzarella_cheese",
             "pepperoni"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev_uniform": 0.0575027366479238,
-              "max_abs_dev_target": 0.0575027366479238,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.016863500078519195,
+              "max_abs_dev_target": 0.016863500078519195,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.2
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev_uniform": 0.03826480607191721,
-              "max_abs_dev_target": 0.03826480607191721,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.010236238439877837,
+              "max_abs_dev_target": 0.010236238439877837,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.2
             },
             "2": {
-              "name": "pepperoni",
-              "max_abs_dev_uniform": 0.05633671830097833,
-              "max_abs_dev_target": 0.05633671830097833,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.031100561221440642,
+              "max_abs_dev_target": 0.031100561221440642,
               "ideal": 0.16666666666666666,
               "active": true,
-              "ingredient_importance": 0.33333333333333337
+              "ingredient_importance": 0.2
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.11525111397107443,
+              "max_abs_dev_target": 0.11525111397107443,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.2
+            },
+            "4": {
+              "name": "pepperoni",
+              "max_abs_dev_uniform": 0.06388175984223685,
+              "max_abs_dev_target": 0.06388175984223685,
+              "ideal": 0.16666666666666666,
+              "active": true,
+              "ingredient_importance": 0.2
             }
           },
           "preferences": null,
@@ -1035,94 +1541,132 @@
         "N=5_complex_prefs": {
           "N": 5,
           "tag": "complex_prefs",
-          "runtime_s": 14.225019409001106,
-          "fairness": 0.37230932932380156,
-          "fairness_complexity_adjusted": 0.6861546646619008,
-          "fairness_relative": 0.8384678674240907,
-          "fairness_relative_active": 0.6769357398152351,
+          "runtime_s": 39.895378035999784,
+          "fairness": 0.2527905834210594,
+          "fairness_complexity_adjusted": 0.5734951327493647,
+          "fairness_relative": 0.9138210343651808,
+          "fairness_relative_active": 0.7772306025028229,
           "scores": [
             [
-              0.22181996703147888,
-              0.2629258632659912,
-              0.20870517194271088
+              0.20038190484046936,
+              0.19924798607826233,
+              0.21537736058235168,
+              0.16995437443256378,
+              0.19484779238700867
             ],
             [
-              0.18440695106983185,
-              0.12406342476606369,
-              0.14754392206668854
+              0.20565563440322876,
+              0.20072481036186218,
+              0.20703645050525665,
+              0.10079387575387955,
+              0.24362067878246307
             ],
             [
-              0.2193574756383896,
-              0.23366019129753113,
-              0.2835010886192322
+              0.1947224736213684,
+              0.19553887844085693,
+              0.22547312080860138,
+              0.15068532526493073,
+              0.2314065545797348
             ],
             [
-              0.2088194638490677,
-              0.2231358289718628,
-              0.21638664603233337
+              0.1910191774368286,
+              0.19123153388500214,
+              0.18878547847270966,
+              0.3202369213104248,
+              0.17363522946834564
             ],
             [
-              0.16559910774230957,
-              0.1562144011259079,
-              0.14386634528636932
+              0.20822668075561523,
+              0.21325869858264923,
+              0.16332772374153137,
+              0.258343905210495,
+              0.15650621056556702
             ]
           ],
           "ingredient_columns": [
-            "pizza dough",
-            "tomato sauce",
+            "dough",
+            "crust",
+            "tomato_sauce",
+            "mozzarella_cheese",
             "pepperoni"
           ],
           "ingredient_fairness_deviation": {
             "0": {
-              "name": "pizza dough",
-              "max_abs_dev_uniform": 0.03440089225769044,
-              "max_abs_dev_target": 0.10334140881328469,
+              "name": "dough",
+              "max_abs_dev_uniform": 0.008980822563171398,
+              "max_abs_dev_target": 0.2768543552141296,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
             },
             "1": {
-              "name": "tomato sauce",
-              "max_abs_dev_uniform": 0.07593657523393632,
-              "max_abs_dev_target": 0.3540984135765386,
+              "name": "crust",
+              "max_abs_dev_uniform": 0.01325869858264922,
+              "max_abs_dev_target": 0.5889458753457049,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333334
+              "ingredient_importance": 0.19999999999999998
             },
             "2": {
-              "name": "pepperoni",
-              "max_abs_dev_uniform": 0.08350108861923217,
-              "max_abs_dev_target": 0.47796542938109476,
+              "name": "tomato_sauce",
+              "max_abs_dev_uniform": 0.03667227625846864,
+              "max_abs_dev_target": 0.48374590029171594,
               "ideal": 0.2,
               "active": true,
-              "ingredient_importance": 0.3333333333333333
+              "ingredient_importance": 0.2
+            },
+            "3": {
+              "name": "mozzarella_cheese",
+              "max_abs_dev_uniform": 0.1202369213104248,
+              "max_abs_dev_target": 0.2118327338288768,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.2
+            },
+            "4": {
+              "name": "pepperoni",
+              "max_abs_dev_uniform": 0.04362067878246306,
+              "max_abs_dev_target": 0.14275127158308804,
+              "ideal": 0.2,
+              "active": true,
+              "ingredient_importance": 0.2
             }
           },
           "preferences": [
             [
-              0.7069034576416016,
-              7.3767242431640625,
-              3.195611000061035
+              0.4121474325656891,
+              17.44026756286621,
+              2.1565628051757812,
+              0.4280063211917877,
+              0.7849615812301636
             ],
             [
-              1.373276948928833,
-              0.037784311920404434,
-              1.9245492219924927
+              1.9751498699188232,
+              0.2213953584432602,
+              0.6917480826377869,
+              0.3951084017753601,
+              1.111725091934204
             ],
             [
-              0.7332067489624023,
-              1.3855499029159546,
-              19.408842086791992
+              0.3755773603916168,
+              1.6882178783416748,
+              11.800925254821777,
+              0.2335864007472992,
+              1.950669527053833
             ],
             [
-              0.7181255221366882,
-              2.6153981685638428,
-              0.4659453332424164
+              0.17241446673870087,
+              0.46896281838417053,
+              1.1524044275283813,
+              5.978453636169434,
+              1.1371554136276245
             ],
             [
-              1.2409800291061401,
-              0.5398659110069275,
-              0.49381861090660095
+              1.158200979232788,
+              2.3080320358276367,
+              0.8376836776733398,
+              4.201068878173828,
+              0.22898223996162415
             ]
           ],
           "flags": {
@@ -1136,74 +1680,74 @@
     "table": [
       {
         "image": "pizza_3.jpg",
-        "K": 3,
-        "fairness_N3": 0.8263568431138992,
-        "fairness_N4": 0.8164943854014078,
-        "fairness_N3_complexity_adjusted": 0.9131784215569496,
-        "fairness_N4_complexity_adjusted": 0.9082471927007039,
-        "fairness_N3_relative": 0.8594526648521423,
-        "fairness_N4_relative": 0.772626260916392,
-        "fairness_N3_relative_active": 0.7189053595066071,
-        "fairness_N4_relative_active": 0.5452525218327839,
-        "runtime_vision_s": 4.876237745997059,
-        "runtime_part_N3_s": 8.822157751001214,
-        "runtime_part_N4_s": 14.237863602000289
+        "K": 6,
+        "fairness_N3": 0.7392557233572006,
+        "fairness_N4": 0.7735056559244791,
+        "fairness_N3_complexity_adjusted": 0.8296447263677745,
+        "fairness_N4_complexity_adjusted": 0.8372999069329492,
+        "fairness_N3_relative": 0.9750036469194567,
+        "fairness_N4_relative": 0.9577263991658004,
+        "fairness_N3_relative_active": 0.9298263683269969,
+        "fairness_N4_relative_active": 0.8813229986250113,
+        "runtime_vision_s": 20.63812851700004,
+        "runtime_part_N3_s": 32.32567651999989,
+        "runtime_part_N4_s": 38.87603384099975
       },
       {
         "image": "pizza_4.jpg",
-        "K": 4,
-        "fairness_N3": 0.8130178824067116,
-        "fairness_N4": 0.863836387793223,
-        "fairness_N3_complexity_adjusted": 0.9194711851736481,
-        "fairness_N4_complexity_adjusted": 0.941357524159945,
-        "fairness_N3_relative": 0.9041233978651647,
-        "fairness_N4_relative": 0.8474179281419156,
-        "fairness_N3_relative_active": 0.7773814536631107,
-        "fairness_N4_relative_active": 0.6457154005765915,
-        "runtime_vision_s": 7.273184592002508,
-        "runtime_part_N3_s": 6.158269053998083,
-        "runtime_part_N4_s": 8.559300898999936
+        "K": 7,
+        "fairness_N3": 0.5925700716674328,
+        "fairness_N4": 0.5633699417114257,
+        "fairness_N3_complexity_adjusted": 0.738826969017585,
+        "fairness_N4_complexity_adjusted": 0.6907203753789266,
+        "fairness_N3_relative": 0.9288455841028113,
+        "fairness_N4_relative": 0.901982887074419,
+        "fairness_N3_relative_active": 0.7865367407418926,
+        "fairness_N4_relative_active": 0.7059486569657825,
+        "runtime_vision_s": 28.140039207999507,
+        "runtime_part_N3_s": 24.901088671000252,
+        "runtime_part_N4_s": 28.502906634000283
       },
       {
         "image": "pizza_1.jpg",
-        "K": 3,
-        "fairness_N3": 0.8605276048183441,
-        "fairness_N4": 0.8765404025713602,
-        "fairness_N3_complexity_adjusted": 0.9302638024091721,
-        "fairness_N4_complexity_adjusted": 0.9382702012856801,
-        "fairness_N3_relative": 0.8883034437894821,
-        "fairness_N4_relative": 0.8797523379325867,
-        "fairness_N3_relative_active": 0.7766068776448567,
-        "fairness_N4_relative_active": 0.7595046758651733,
-        "runtime_vision_s": 6.890160769999056,
-        "runtime_part_N3_s": 5.964353209001274,
-        "runtime_part_N4_s": 9.616466493000189
+        "K": 5,
+        "fairness_N3": 0.7997219242155551,
+        "fairness_N4": 0.7744873046874999,
+        "fairness_N3_complexity_adjusted": 0.8658449687984705,
+        "fairness_N4_complexity_adjusted": 0.8349815129654262,
+        "fairness_N3_relative": 0.9460343165918905,
+        "fairness_N4_relative": 0.9285066616868551,
+        "fairness_N3_relative_active": 0.8605007320642472,
+        "fairness_N4_relative_active": 0.8151924014091493,
+        "runtime_vision_s": 14.828305017000275,
+        "runtime_part_N3_s": 24.003780670000197,
+        "runtime_part_N4_s": 30.234505970999635
       }
     ],
     "fairness_mean": {
-      "N=3": 0.8333007767796516,
-      "N=4": 0.8522903919219971
+      "N=3": 0.7105159064133962,
+      "N=4": 0.7037876341078015
     },
     "fairness_mean_complexity_adjusted": {
-      "N=3": 0.9209711363799232,
-      "N=4": 0.9292916393821097
+      "N=3": 0.8114388880612767,
+      "N=4": 0.787667265092434
     },
     "fairness_mean_relative": {
-      "N=3": 0.883959835502263,
-      "N=4": 0.8332655089969648
+      "N=3": 0.9499611825380528,
+      "N=4": 0.9294053159756915
     },
     "fairness_mean_relative_active": {
-      "N=3": 0.7576312302715248,
-      "N=4": 0.6501575327581829
+      "N=3": 0.8589546137110456,
+      "N=4": 0.8008213523333144
     },
     "runtime_mean_s": {
-      "vision": 6.346527702666208,
-      "partition_N3": 6.981593338000191,
-      "partition_N4": 10.804543664666804
+      "vision": 21.202157580666608,
+      "partition_N3": 27.076848620333447,
+      "partition_N4": 32.53781548199989
     },
     "hardest_ingredient_avg_deviation": {
-      "name": "tomato_sauce",
-      "avg_max_abs_dev": 0.11106645613908768
+      "name": "melted_cheese",
+      "avg_max_abs_dev": 0.1758020925025145
     }
   }
 }
