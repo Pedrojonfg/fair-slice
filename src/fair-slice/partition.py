@@ -83,7 +83,11 @@ def compute_partition(
     Args:
         ingredient_map: shape (H, W, K), dtype float32. Output of segment_dish().
         n_people: number of people (2-8).
-        mode: "free" (power diagram, default) or "radial".
+        mode:
+          - "convex": power diagram only (no fallback). This is the demo-safe mode.
+          - "radial": radial baseline only.
+          - "auto": evaluate both and return the one with higher fairness.
+          - "free": backwards-compatible alias for "convex".
         preferences: optional shape (N, K) float array of per-person ingredient
                      preferences. preferences[i, j] = how much person i values
                      ingredient j (relative weights). Will be normalized so
@@ -106,29 +110,42 @@ def compute_partition(
         raise ValueError("ingredient_map dish has too few pixels")
     P_norm = _normalize_preferences(preferences, n_people, ingredient_map.shape[-1])
 
+    # Backwards-compatible alias
+    if mode == "free":
+        mode = "convex"
+
     if mode == "radial":
-        return _solve_radial(ingredient_map, n_people, P_norm)
-    elif mode == "free":
-        result_free = _solve_power_diagram(ingredient_map, n_people, P_norm)
+        result = _solve_radial(ingredient_map, n_people, P_norm)
+        result["mode_used"] = "radial"
+        return result
+
+    if mode == "convex":
+        result = _solve_power_diagram(ingredient_map, n_people, P_norm)
+        result["mode_used"] = "convex"
+        return result
+
+    if mode == "auto":
+        result_convex = _solve_power_diagram(ingredient_map, n_people, P_norm)
         result_radial = _solve_radial(ingredient_map, n_people, P_norm)
 
-        if result_radial["fairness"] > result_free["fairness"]:
+        if result_radial["fairness"] > result_convex["fairness"]:
             print(
                 f"[partition] Radial wins: "
-                f"{result_radial['fairness']:.3f} > {result_free['fairness']:.3f}"
+                f"{result_radial['fairness']:.3f} > {result_convex['fairness']:.3f}"
             )
-            result_free = result_radial
-            result_free["mode_used"] = "radial"
-        else:
-            print(
-                f"[partition] Free wins: "
-                f"{result_free['fairness']:.3f} >= {result_radial['fairness']:.3f}"
-            )
-            result_free["mode_used"] = "free"
+            result = result_radial
+            result["mode_used"] = "radial"
+            return result
 
-        return result_free
-    else:
-        raise ValueError(f"Unknown mode: {mode!r}. Use 'free' or 'radial'.")
+        print(
+            f"[partition] Convex wins: "
+            f"{result_convex['fairness']:.3f} >= {result_radial['fairness']:.3f}"
+        )
+        result = result_convex
+        result["mode_used"] = "convex"
+        return result
+
+    raise ValueError(f"Unknown mode: {mode!r}. Use 'convex', 'radial', 'auto' (or legacy 'free').")
 
 
 # ===========================================================================
@@ -158,8 +175,8 @@ def _validate_inputs(
         raise ValueError(f"ingredient_map too small: {H}x{W}")
     if not np.isfinite(ingredient_map).all():
         raise ValueError("ingredient_map contains NaN or Inf")
-    if mode not in ("free", "radial"):
-        raise ValueError(f"mode must be 'free' or 'radial', got {mode!r}")
+    if mode not in ("free", "convex", "radial", "auto"):
+        raise ValueError(f"mode must be 'convex'/'free', 'radial', or 'auto', got {mode!r}")
 
     if preferences is not None:
         if not isinstance(preferences, np.ndarray):
