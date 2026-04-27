@@ -213,9 +213,12 @@ def _screen_preferences() -> None:
     with col2:
         mode_label = st.selectbox(
             "Cut mode",
-            options=["free", "radial"],
+            options=["convex", "radial", "auto"],
             index=0,
-            format_func=lambda m: "Convex (free)" if m == "free" else "Radial",
+            format_func=lambda m: (
+                "Convex" if m == "convex"
+                else ("Radial" if m == "radial" else "Auto (best of convex/radial)")
+            ),
         )
         equitable = st.checkbox("Equal split (no preferences)", value=False)
 
