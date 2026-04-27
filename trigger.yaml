@@ -1,8 +1,0 @@
-name: fairslice-deterministic
-description: Deploy fairslice to Cloud Run using cloudbuild.yaml
-github:
-  owner: Pedrojonfg
-  name: fair-slice
-  push:
-    branch: ^main$
-filename: cloudbuild.yaml
