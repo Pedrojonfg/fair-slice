@@ -46,9 +46,6 @@ _LR_GROWTH = 1.15
 _ETA_FLOOR = 1e-8
 _PATIENCE_GROW = 4
 
-# Phase 3 (joint) exploration
-_JOINT_P_STEP_MULT = 20.0          # multiply position step vs weight step
-
 # Finite-difference step sizes — larger steps capture concentrated-ingredient
 # transitions (e.g. pepperoni blobs) that small epsilons miss entirely
 _EPS_FD_P_INIT = 2.0
@@ -932,7 +929,7 @@ def _phase_joint(
             eps_p=eps_p,
         )
         # More aggressive exploration for generator positions (keep weight LR unchanged).
-        p_new = p - (eta_p * _JOINT_P_STEP_MULT) * grad_p
+        p_new = p - (eta_p * 5.0) * grad_p
         w_new = w - eta_w * grad_w
         p_new = _hard_project_to_domain(p_new, domain_full)
         L_new, _ = _eval_loss(coords, densities, p_new, w_new, targets, alpha, dt_outside, shape_hw)
