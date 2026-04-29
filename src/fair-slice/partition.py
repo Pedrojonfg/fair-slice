@@ -39,8 +39,21 @@ _WEIGHT_MAX_ITERS = 60
 _JOINT_MAX_ITERS = 60
 
 # Adaptive learning rates
-_ETA_W_INIT = 5.0
-_ETA_P_INIT = 3.0
+#
+# Learning-rate knobs (used to be coupled):
+# - phase2 weights-only optimization uses `_ETA_W2_INIT`
+# - phase3 joint optimization uses `_ETA_W3_INIT` for weights
+# - phase3 joint optimization uses `_ETA_P_INIT` for positions
+#
+# Defaults are set to the previously recommended coupled values, so the
+# baseline behavior stays comparable.
+_ETA_W2_INIT = 10.0
+_ETA_W3_INIT = 10.0
+_ETA_P_INIT = 6.0
+
+# Legacy alias: keep `_ETA_W_INIT` so external tooling/tests that monkeypatch
+# the old constant still affect phase3 by default.
+_ETA_W_INIT = _ETA_W3_INIT
 _LR_DECAY = 0.5
 _LR_GROWTH = 1.15
 _ETA_FLOOR = 1e-8
@@ -875,7 +888,7 @@ def _phase_weights(
     max_iters,
 ) -> np.ndarray:
     w = w_init.copy()
-    eta = _ETA_W_INIT
+    eta = _ETA_W2_INIT
     L, _ = _eval_loss(coords, densities, p, w, targets, alpha, dt_outside, shape_hw)
     best_L, best_w = L, w.copy()
     consecutive_improvements = 0
@@ -934,7 +947,7 @@ def _phase_joint(
     p = p_init.copy()
     w = w_init.copy()
     shape_hw = domain_full.shape
-    eta_p, eta_w = _ETA_P_INIT, _ETA_W_INIT
+    eta_p, eta_w = _ETA_P_INIT, _ETA_W3_INIT
     eps_p = _EPS_FD_P_INIT
     L, _ = _eval_loss(coords, densities, p, w, targets, alpha, dt_outside, shape_hw)
     best_L, best_p, best_w = L, p.copy(), w.copy()
