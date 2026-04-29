@@ -1,4 +1,5 @@
 import numpy as np
+from PIL import Image
 import pytest
 
 from partition import compute_partition
@@ -14,12 +15,19 @@ def test_g1_load_pizza_mock_500_and_compute_partition():
 
 
 @pytest.mark.slow
-def test_g2_pipeline_partition_to_visualize_smoke():
+def test_g2_pipeline_partition_to_visualize_smoke(tmp_path):
     imap = np.load("tests/fixtures/mock_data/pizza_mock_500.npy").astype(np.float32)
     r = compute_partition(imap, 4, mode="free")
     labels = {0: "dough", 1: "tomato_sauce", 2: "mozzarella", 3: "pepperoni", 4: "basil"}
+
+    # render_partition() expects a real image file on disk.
+    # Generate a lightweight dummy image matching the imap resolution.
+    h, w = imap.shape[0], imap.shape[1]
+    image_path = tmp_path / "pizza_test.jpg"
+    Image.new("RGB", (w, h), (185, 160, 120)).save(image_path, format="JPEG", quality=90)
+
     img = render_partition(
-        image_path="tests/fixtures/sample_images/pizza_test.jpg",
+        image_path=str(image_path),
         masks=r["masks"],
         scores=r["scores"],
         ingredient_labels=labels,

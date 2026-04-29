@@ -50,7 +50,9 @@ def test_a8_n_people_not_int():
 
 
 def test_a9_mode_invalid():
-    with pytest.raises(ValueError, match="must be 'free' or 'radial'"):
+    # Current implementation supports:
+    #   'free' (legacy alias of 'convex'), 'convex', 'radial', 'auto'
+    with pytest.raises(ValueError, match=r"mode must be .*free.*radial"):
         compute_partition(_base_map(), 2, mode="weird")
 
 
